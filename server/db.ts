@@ -294,11 +294,11 @@ export function initDatabase() {
     const initialBanners = [
       {
         id: "b1",
-        title: "Sua saúde merece o melhor cuidado!",
-        subtitle: "Descontos especiais em medicamentos e cuidados diários.",
+        title: "Promoção de Verão - Farmácia Super Popular",
+        subtitle: "Energia e Proteção para sua Família!",
         buttonText: "Aproveite agora!",
         buttonLink: "#catalog-section",
-        imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop&q=60",
+        imageUrl: "/banner-principal.png",
         bgColor: "bg-gradient-to-br from-emerald-50 to-teal-50/50",
         textColor: "text-slate-800",
         borderColor: "border-emerald-100/80",
