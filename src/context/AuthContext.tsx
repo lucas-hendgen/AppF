@@ -18,9 +18,8 @@ interface AuthContextType {
     address?: Partial<UserAddress>;
     healthNotes?: string;
   }) => Promise<{ message: string }>;
-  forgotPassword: (email: string) => Promise<{ message: string; recoveryCode?: string }>;
+  forgotPassword: (email: string) => Promise<{ message: string }>;
   resetPassword: (email: string, newPass: string, code: string) => Promise<{ message: string }>;
-  googleAuth: (data: { email: string; name?: string; googleId?: string }) => Promise<{ message: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
@@ -37,8 +36,6 @@ interface AuthContextType {
   isProfileModalOpen: boolean;
   openProfileModal: () => void;
   closeProfileModal: () => void;
-
-
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'forgot_password'>('login');
   const [authModalReason, setAuthModalReason] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-
 
   const refreshUser = async () => {
     const savedToken = localStorage.getItem('fsp_auth_token');
@@ -101,20 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const forgotPassword = async (email: string) => {
     const result = await api.forgotPassword(email);
-    return result;
+    return { message: result.message };
   };
 
   const resetPassword = async (email: string, newPass: string, code: string) => {
     const result = await api.resetPassword(email, newPass, code);
-    setUser(result.user);
-    setToken(result.token);
-    setIsAuthModalOpen(false);
-    setAuthModalReason(null);
-    return { message: result.message };
-  };
-
-  const googleAuth = async (data: { email: string; name?: string; googleId?: string }) => {
-    const result = await api.googleAuth(data);
     setUser(result.user);
     setToken(result.token);
     setIsAuthModalOpen(false);
@@ -127,7 +114,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setToken(null);
     setIsProfileModalOpen(false);
-
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
@@ -172,8 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsProfileModalOpen(false);
   };
 
-
-
   return (
     <AuthContext.Provider
       value={{
@@ -186,7 +170,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         forgotPassword,
         resetPassword,
-        googleAuth,
         logout,
         refreshUser,
         updateProfile,
@@ -200,7 +183,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isProfileModalOpen,
         openProfileModal,
         closeProfileModal,
-
       }}
     >
       {children}

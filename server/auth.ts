@@ -26,8 +26,8 @@ export function generateToken(user: UserProfile): string {
   );
 }
 
-export function sanitizeUser(user: UserProfile): Omit<UserProfile, 'passwordHash'> {
-  const { passwordHash, ...safeUser } = user;
+export function sanitizeUser(user: UserProfile): Omit<UserProfile, 'passwordHash' | 'recoveryCode' | 'recoveryCodeExpires'> {
+  const { passwordHash, recoveryCode, recoveryCodeExpires, ...safeUser } = user;
   return safeUser;
 }
 
@@ -71,12 +71,12 @@ export const authController = {
         return;
       }
 
-      if (password.length < 6) {
+      if (typeof password !== 'string' || password.length < 6) {
         res.status(400).json({ error: 'A senha deve conter no mínimo 6 caracteres.' });
         return;
       }
 
-      const cleanEmail = email.trim().toLowerCase();
+      const cleanEmail = String(email).trim().toLowerCase();
       const existingEmail = db.getUserByEmail(cleanEmail);
       if (existingEmail) {
         res.status(409).json({ error: 'Já existe uma conta cadastrada com este e-mail.' });
@@ -84,7 +84,7 @@ export const authController = {
       }
 
       if (cpf) {
-        const cleanCpf = cpf.replace(/\D/g, '');
+        const cleanCpf = String(cpf).replace(/\D/g, '');
         if (cleanCpf.length === 11) {
           const existingCpf = db.getUserByCpf(cleanCpf);
           if (existingCpf) {
@@ -103,44 +103,51 @@ export const authController = {
       if (address && address.street && address.neighborhood) {
         addresses.push({
           id: `addr_${Date.now()}`,
-          street: address.street,
-          number: address.number || 'S/N',
-          complement: address.complement || '',
-          neighborhood: address.neighborhood,
-          city: address.city || 'Itapema',
-          state: address.state || 'SC',
-          cep: address.cep || '',
+          street: String(address.street).trim(),
+          number: address.number ? String(address.number).trim() : 'S/N',
+          complement: address.complement ? String(address.complement).trim() : '',
+          neighborhood: String(address.neighborhood).trim(),
+          city: address.city ? String(address.city).trim() : 'Itapema',
+          state: address.state ? String(address.state).trim() : 'SC',
+          cep: address.cep ? String(address.cep).trim() : '',
           isDefault: true
         });
       }
 
       const newUser: UserProfile = {
         id: userId,
-        name: name.trim(),
+        name: String(name).trim(),
         email: cleanEmail,
-        cpf: cpf ? cpf.trim() : '',
-        phone: phone.trim(),
+        cpf: cpf ? String(cpf).trim() : '',
+        phone: String(phone).trim(),
         passwordHash,
         role: 'member',
         membershipTier: 'Standard',
         loyaltyPoints: 50, // Bônus de boas-vindas
-        healthNotes: healthNotes || '',
+        healthNotes: healthNotes ? String(healthNotes).trim() : '',
         addresses,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
       db.createUser(newUser);
-      const token = generateToken(newUser);
+
+      // Verificação de persistência
+      const verifiedUser = db.getUserById(userId);
+      if (!verifiedUser) {
+        throw new Error('Falha ao confirmar gravação do usuário no banco de dados.');
+      }
+
+      const token = generateToken(verifiedUser);
 
       res.status(201).json({
         message: 'Cadastro realizado com sucesso! Bem-vindo(a) ao Clube Super Popular.',
         token,
-        user: sanitizeUser(newUser)
+        user: sanitizeUser(verifiedUser)
       });
     } catch (err: any) {
       console.error('Erro no registro:', err);
-      res.status(500).json({ error: 'Erro interno ao processar cadastro. Tente novamente.' });
+      res.status(500).json({ error: err.message || 'Erro interno ao processar cadastro. Tente novamente.' });
     }
   },
 

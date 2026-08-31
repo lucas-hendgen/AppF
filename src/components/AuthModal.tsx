@@ -3,10 +3,16 @@ import { X, Lock, Mail, User, Phone, FileText, CheckCircle2, ShieldCheck, Sparkl
 import { useAuth } from '../context/AuthContext';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, authModalMode, authModalReason, closeAuthModal, openAuthModal, login, register, forgotPassword, resetPassword, googleAuth } = useAuth();
+  const { isAuthModalOpen, authModalMode, authModalReason, closeAuthModal, login, register, forgotPassword, resetPassword } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'forgot_password'>(authModalMode);
-  const [showPassword, setShowPassword] = useState(false);
+  
+  // Password visibility states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
+
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,6 +22,10 @@ export const AuthModal: React.FC = () => {
     setActiveTab(authModalMode);
     setErrorMsg('');
     setSuccessMsg('');
+    setShowLoginPassword(false);
+    setShowRegPassword(false);
+    setShowResetPassword(false);
+    setShowResetConfirmPassword(false);
   }, [authModalMode, isAuthModalOpen]);
 
   // Form states - Login
@@ -75,10 +85,10 @@ export const AuthModal: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await login(loginIdentifier, loginPassword);
+      const res = await login(loginIdentifier.trim(), loginPassword);
       setSuccessMsg(res.message);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Erro ao realizar login.');
+      setErrorMsg(err.message || 'Erro ao realizar login. Verifique suas credenciais.');
     } finally {
       setLoading(false);
     }
@@ -86,25 +96,30 @@ export const AuthModal: React.FC = () => {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (regPassword.length < 6) {
+      setErrorMsg('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
     setErrorMsg('');
     setSuccessMsg('');
     setLoading(true);
 
     try {
       const res = await register({
-        name: regName,
-        email: regEmail,
+        name: regName.trim(),
+        email: regEmail.trim().toLowerCase(),
         cpf: regCpf,
         phone: regPhone,
         password: regPassword,
         address: regStreet ? {
-          street: regStreet,
-          number: regNumber || 'S/N',
+          street: regStreet.trim(),
+          number: regNumber.trim() || 'S/N',
           neighborhood: regNeighborhood,
           city: 'Itapema',
           state: 'SC'
         } : undefined,
-        healthNotes: regHealthNotes
+        healthNotes: regHealthNotes.trim()
       });
       setSuccessMsg(res.message);
     } catch (err: any) {
@@ -116,7 +131,7 @@ export const AuthModal: React.FC = () => {
 
   const handleForgotPasswordRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail) {
+    if (!forgotEmail.trim()) {
       setErrorMsg('Informe seu e-mail cadastrado.');
       return;
     }
@@ -125,11 +140,11 @@ export const AuthModal: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await forgotPassword(forgotEmail);
-      setSuccessMsg(res.message || 'Código de recuperação enviado com sucesso! Verifique o console do servidor.');
+      const res = await forgotPassword(forgotEmail.trim().toLowerCase());
+      setSuccessMsg(res.message || 'Código de 6 dígitos gerado com sucesso!');
       setRecoveryStep('reset');
     } catch (err: any) {
-      setErrorMsg(err.message || 'E-mail não encontrado.');
+      setErrorMsg(err.message || 'E-mail não encontrado em nosso sistema.');
     } finally {
       setLoading(false);
     }
@@ -137,8 +152,8 @@ export const AuthModal: React.FC = () => {
 
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recoveryCode) {
-      setErrorMsg('Informe o código de verificação enviado.');
+    if (!recoveryCode.trim()) {
+      setErrorMsg('Informe o código de verificação recebido.');
       return;
     }
     if (!newPassword || newPassword.length < 6) {
@@ -146,7 +161,7 @@ export const AuthModal: React.FC = () => {
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      setErrorMsg('As senhas não coincidem.');
+      setErrorMsg('As senhas digitadas não coincidem.');
       return;
     }
     setErrorMsg('');
@@ -154,31 +169,10 @@ export const AuthModal: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await resetPassword(forgotEmail, newPassword, recoveryCode);
-      setSuccessMsg(res.message);
+      const res = await resetPassword(forgotEmail.trim().toLowerCase(), newPassword, recoveryCode.trim());
+      setSuccessMsg(res.message || 'Senha redefinida com sucesso! Acessando sua conta...');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Erro ao redefinir senha.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleAction = async (customEmail?: string) => {
-    setErrorMsg('');
-    setSuccessMsg('');
-    setLoading(true);
-
-    try {
-      const email = customEmail || forgotEmail || (loginIdentifier.includes('@') ? loginIdentifier : 'maria.helena@email.com');
-      const name = email.includes('maria') ? 'Maria Helena Silveira' : 'Cliente Google';
-      const res = await googleAuth({
-        email,
-        name,
-        googleId: `goog_${Date.now()}`
-      });
-      setSuccessMsg(res.message);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Erro ao autenticar com Google.');
+      setErrorMsg(err.message || 'Código de verificação incorreto ou expirado.');
     } finally {
       setLoading(false);
     }
@@ -212,7 +206,7 @@ export const AuthModal: React.FC = () => {
               </h2>
               <p className="text-xs text-emerald-100">
                 {activeTab === 'forgot_password' 
-                  ? 'Recupere o acesso via Google ou por e-mail com facilidade'
+                  ? 'Redefina sua senha com seu código de segurança'
                   : 'Acesse seus pedidos, descontos do clube e histórico farmacêutico'}
               </p>
             </div>
@@ -332,7 +326,7 @@ export const AuthModal: React.FC = () => {
                       setErrorMsg('');
                       setSuccessMsg('');
                     }}
-                    className="text-xs text-[#10b981] hover:text-[#34d399] font-semibold hover:underline"
+                    className="text-xs text-[#10b981] hover:text-[#059669] font-semibold hover:underline"
                   >
                     Esqueceu a senha?
                   </button>
@@ -340,7 +334,7 @@ export const AuthModal: React.FC = () => {
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showLoginPassword ? 'text' : 'password'}
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -349,10 +343,12 @@ export const AuthModal: React.FC = () => {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-700 transition-colors"
+                    title={showLoginPassword ? 'Ocultar senha' : 'Exibir senha'}
+                    aria-label={showLoginPassword ? 'Ocultar senha' : 'Exibir senha'}
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -362,29 +358,14 @@ export const AuthModal: React.FC = () => {
                 disabled={loading}
                 className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {loading ? 'Validando credenciais...' : 'Acessar Conta de Membro'}
-              </button>
-
-              {/* Fast Google Login Option */}
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-3 text-xs text-slate-400 uppercase font-bold tracking-wider">Ou continue com</span>
-                <div className="flex-grow border-t border-slate-200"></div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleGoogleAction()}
-                disabled={loading}
-                className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-3"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.3 8.9 5 12 5z"/>
-                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
-                  <path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.4-.4-2.2s.2-1.5.4-2.2L1.6 7.4C.6 9.4 0 11.6 0 14s.6 4.6 1.6 6.6l3.7-2.9z"/>
-                  <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.3-6.7-5.3L1.6 16c1.9 3.8 5.8 7 10.4 7z"/>
-                </svg>
-                <span>Entrar com a Conta Google</span>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Validando credenciais...
+                  </span>
+                ) : (
+                  'Acessar Conta de Membro'
+                )}
               </button>
             </form>
           )}
@@ -394,29 +375,6 @@ export const AuthModal: React.FC = () => {
           {/* ======================================================== */}
           {activeTab === 'register' && (
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-              
-              {/* Quick Google Sign up */}
-              <button
-                type="button"
-                onClick={() => handleGoogleAction('novo.membro@gmail.com')}
-                disabled={loading}
-                className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-3 mb-2"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.3 8.9 5 12 5z"/>
-                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
-                  <path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.4-.4-2.2s.2-1.5.4-2.2L1.6 7.4C.6 9.4 0 11.6 0 14s.6 4.6 1.6 6.6l3.7-2.9z"/>
-                  <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.3-6.7-5.3L1.6 16c1.9 3.8 5.8 7 10.4 7z"/>
-                </svg>
-                <span>Cadastre-se Rápido com Google</span>
-              </button>
-
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-3 text-xs text-slate-400 uppercase font-bold tracking-wider">Ou preencha seus dados</span>
-                <div className="flex-grow border-t border-slate-200"></div>
-              </div>
-
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                   Nome Completo *
@@ -489,19 +447,28 @@ export const AuthModal: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                    Senha (mín 6 dig) *
+                    Senha (mín 6 dígitos) *
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
                     <input
-                      type={showPassword ? 'text' : 'password'}
+                      type={showRegPassword ? 'text' : 'password'}
                       required
                       minLength={6}
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="Mínimo 6 caracteres"
-                      className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 transition-colors"
+                      title={showRegPassword ? 'Ocultar senha' : 'Exibir senha'}
+                      aria-label={showRegPassword ? 'Ocultar senha' : 'Exibir senha'}
+                    >
+                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -572,55 +539,25 @@ export const AuthModal: React.FC = () => {
                 disabled={loading}
                 className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {loading ? 'Criando sua conta...' : 'Concluir Cadastro de Membro'}
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Criando sua conta...
+                  </span>
+                ) : (
+                  'Concluir Cadastro de Membro'
+                )}
               </button>
             </form>
           )}
 
           {/* ======================================================== */}
-          {/* TAB 3: FORGOT PASSWORD (GOOGLE + EMAIL) */}
+          {/* TAB 3: FORGOT PASSWORD */}
           {/* ======================================================== */}
           {activeTab === 'forgot_password' && (
-            <div className="space-y-5">
-              
-              {/* Option 1: Recover / Login with Google */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-200/50">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800">Opção 1: Recuperação Imediata com Google</h3>
-                    <p className="text-xs text-slate-500">Acesse sua conta instantaneamente sem precisar lembrar a senha</p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleGoogleAction()}
-                  disabled={loading}
-                  className="w-full py-3 bg-slate-100 hover:bg-slate-200 border border-slate-300 hover:border-emerald-500 text-slate-800 font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-3 shadow-md"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.3 8.9 5 12 5z"/>
-                    <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
-                    <path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.4-.4-2.2s.2-1.5.4-2.2L1.6 7.4C.6 9.4 0 11.6 0 14s.6 4.6 1.6 6.6l3.7-2.9z"/>
-                    <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.3-6.7-5.3L1.6 16c1.9 3.8 5.8 7 10.4 7z"/>
-                  </svg>
-                  <span>Recuperar / Entrar com Google</span>
-                </button>
-              </div>
-
-              {/* Divider */}
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-3 text-xs text-slate-400 uppercase font-bold tracking-wider">Ou redefinir por E-mail</span>
-                <div className="flex-grow border-t border-slate-200"></div>
-              </div>
-
-              {/* Option 2: Recover via Email */}
+            <div className="space-y-4">
               {recoveryStep === 'request' ? (
-                <form onSubmit={handleForgotPasswordRequest} className="space-y-3.5">
+                <form onSubmit={handleForgotPasswordRequest} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                       Seu E-mail Cadastrado
@@ -638,8 +575,8 @@ export const AuthModal: React.FC = () => {
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Enviaremos um código de verificação para redefinir sua senha com segurança.
+                  <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    💡 Geraremos um código de verificação de 6 dígitos para você redefinir sua senha com total segurança.
                   </p>
 
                   <button
@@ -647,37 +584,45 @@ export const AuthModal: React.FC = () => {
                     disabled={loading}
                     className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {loading ? 'Enviando código...' : 'Enviar Código de Recuperação'}
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Gerando código...
+                      </span>
+                    ) : (
+                      'Gerar Código de Recuperação'
+                    )}
                   </button>
                 </form>
               ) : (
                 <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5 animate-in fade-in">
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
-                    Código de 6 dígitos enviado para <strong>{forgotEmail}</strong>
+                    Código de verificação de 6 dígitos gerado para <strong>{forgotEmail}</strong>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Código de Verificação (6 Dígitos)
+                      Código de Verificação (6 Dígitos) *
                     </label>
                     <input
                       type="text"
                       required
+                      maxLength={6}
                       value={recoveryCode}
-                      onChange={(e) => setRecoveryCode(e.target.value)}
+                      onChange={(e) => setRecoveryCode(e.target.value.replace(/\D/g, ''))}
                       placeholder="Ex: 123456"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 text-center tracking-widest font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 text-center tracking-widest font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Nova Senha (mínimo 6 caracteres)
+                      Nova Senha (mínimo 6 caracteres) *
                     </label>
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
                       <input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showResetPassword ? 'text' : 'password'}
                         required
                         minLength={6}
                         value={newPassword}
@@ -687,29 +632,40 @@ export const AuthModal: React.FC = () => {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
+                        onClick={() => setShowResetPassword(!showResetPassword)}
+                        className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-700 transition-colors"
+                        title={showResetPassword ? 'Ocultar senha' : 'Exibir senha'}
+                        aria-label={showResetPassword ? 'Ocultar senha' : 'Exibir senha'}
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Confirmar Nova Senha
+                      Confirmar Nova Senha *
                     </label>
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
                       <input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showResetConfirmPassword ? 'text' : 'password'}
                         required
                         minLength={6}
                         value={confirmNewPassword}
                         onChange={(e) => setConfirmNewPassword(e.target.value)}
                         placeholder="Repita a nova senha"
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowResetConfirmPassword(!showResetConfirmPassword)}
+                        className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-700 transition-colors"
+                        title={showResetConfirmPassword ? 'Ocultar senha' : 'Exibir senha'}
+                        aria-label={showResetConfirmPassword ? 'Ocultar senha' : 'Exibir senha'}
+                      >
+                        {showResetConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
 
@@ -717,7 +673,7 @@ export const AuthModal: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setRecoveryStep('request')}
-                      className="px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded-xl text-slate-600"
+                      className="px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded-xl text-slate-600 transition-all"
                     >
                       Voltar
                     </button>
@@ -726,7 +682,14 @@ export const AuthModal: React.FC = () => {
                       disabled={loading}
                       className="flex-1 py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      {loading ? 'Salvando nova senha...' : 'Salvar Senha e Entrar'}
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Salvando...
+                        </span>
+                      ) : (
+                        'Salvar Senha e Entrar'
+                      )}
                     </button>
                   </div>
                 </form>

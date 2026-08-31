@@ -6,7 +6,7 @@ import { useCart } from '../context/CartContext';
 
 export const Header: React.FC = () => {
   const { user, isAuthenticated, isAdmin, openAuthModal, openProfileModal, logout } = useAuth();
-  const { totalItems, finalTotal, openCart } = useCart();
+  const { totalItems, subtotal, openCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -198,7 +198,7 @@ export const Header: React.FC = () => {
                   )}
                 </div>
                 <span className="hidden sm:inline">
-                  {finalTotal > 0 ? `R$ ${finalTotal.toFixed(2).replace('.', ',')}` : 'Carrinho'}
+                  {subtotal > 0 ? `R$ ${subtotal.toFixed(2).replace('.', ',')}` : 'Carrinho'}
                 </span>
               </button>
             )}

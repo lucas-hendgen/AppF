@@ -19,32 +19,6 @@ export const DynamicBanners: React.FC = () => {
       textColor: "text-slate-800",
       borderColor: "border-emerald-100/80",
       buttonColor: "bg-[#10b981] hover:bg-[#059669] text-white"
-    },
-    {
-      id: "b2",
-      title: "Ofertas da Semana",
-      subtitle: "até 40% OFF",
-      buttonText: "Ver Ofertas",
-      buttonLink: "#catalog-section",
-      imageUrl: "",
-      bgColor: "bg-gradient-to-br from-rose-50 to-red-50/50",
-      textColor: "text-slate-850",
-      borderColor: "border-red-100",
-      buttonColor: "bg-red-600 hover:bg-red-700 text-white",
-      badgeText: "40% OFF",
-      iconName: "Tag"
-    },
-    {
-      id: "b3",
-      title: "Cuidar de você é nossa missão!",
-      subtitle: "Apoio e atenção farmacêutica de verdade.",
-      buttonText: "Saiba Mais",
-      buttonLink: "#catalog-section",
-      imageUrl: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=500&auto=format&fit=crop&q=60",
-      bgColor: "bg-gradient-to-br from-[#064e3b] to-[#047857]",
-      textColor: "text-white",
-      borderColor: "border-emerald-800/30",
-      buttonColor: "bg-white text-emerald-900 hover:bg-emerald-50"
     }
   ];
 

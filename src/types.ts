@@ -32,6 +32,14 @@ export interface AuthState {
   isLoading: boolean;
 }
 
+export type PromotionalSection =
+  | 'ofertas_imperdiveis'
+  | 'leve_mais'
+  | 'super_ofertas'
+  | 'mais_vendidos'
+  | 'lancamentos'
+  | 'geral';
+
 export interface Product {
   id: number;
   sku: string;
@@ -43,6 +51,9 @@ export interface Product {
   classificacaoAdicional?: string;
   observacoes?: string;
   imagem: string;
+  promotionalSection?: PromotionalSection;
+  ean?: string;
+  estoque?: number;
   selectedBasePrice?: number;
   selectedBaseName?: string;
 }

@@ -134,6 +134,37 @@
       }
     ],
     "createdAt": "2026-08-29T19:56:55.428Z",
-    "updatedAt": "2026-08-29T21:06:28.494Z"
+    "updatedAt": "2026-08-31T18:13:18.105Z",
+    "recoveryCode": "566349",
+    "recoveryCodeExpires": "2026-08-31T18:28:18.104Z"
+  },
+  {
+    "id": "usr_1788199813254_hu2pn",
+    "name": "Cliente Teste Producao",
+    "email": "teste_1788199813136@farmacia.com",
+    "cpf": "",
+    "phone": "(47) 98888-7777",
+    "passwordHash": "$2b$10$Fwizv4nKcWKJviydozXXieZhQYZjKMftwtHGIYEq57cx3NGABkpoi",
+    "role": "member",
+    "membershipTier": "Standard",
+    "loyaltyPoints": 50,
+    "healthNotes": "",
+    "addresses": [
+      {
+        "id": "addr_1788199813254",
+        "street": "Rua 230",
+        "number": "120",
+        "complement": "",
+        "neighborhood": "Meia Praia",
+        "city": "Itapema",
+        "state": "SC",
+        "cep": "",
+        "isDefault": true
+      }
+    ],
+    "createdAt": "2026-08-31T18:10:13.254Z",
+    "updatedAt": "2026-08-31T18:10:13.397Z",
+    "recoveryCode": "994481",
+    "recoveryCodeExpires": "2026-08-31T18:25:13.397Z"
   }
 ]

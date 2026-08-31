@@ -95,6 +95,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
             src={product.imagem}
             alt={product.nome}
             className="w-full h-full object-contain"
+            onError={(e) => {
+              (e.target as HTMLElement).style.opacity = '0.3';
+            }}
           />
           <span className="absolute bottom-3 left-4 text-xs font-mono font-bold px-2.5 py-1 bg-slate-200/70 text-slate-500 border border-slate-300/30 rounded-lg backdrop-blur-sm">
             SKU: {product.sku}

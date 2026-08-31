@@ -25,10 +25,11 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Middlewares essenciais
+  // Segurança e Middlewares essenciais
+  app.disable('x-powered-by');
   app.use(cors());
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '5mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
   // Inicializa banco de dados seguro
   initDatabase();
@@ -127,7 +128,12 @@ async function startServer() {
           unitPrice = parseFloat(String(dbProd.preco).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
         }
 
-        const qty = Number(item.quantity || 1);
+        const rawQty = Number(item.quantity);
+        if (isNaN(rawQty) || rawQty <= 0 || !Number.isInteger(rawQty)) {
+          res.status(400).json({ error: `Quantidade inválida para o item: ${item.name || item.id}` });
+          return;
+        }
+        const qty = rawQty;
         expectedSubtotal += unitPrice * qty;
 
         validatedItems.push({
@@ -539,6 +545,17 @@ async function startServer() {
     } catch (err) {
       res.status(500).json({ error: 'Erro ao remover banner.' });
     }
+  });
+
+  // === TRATAMENTO GLOBAL DE ERROS (Middleware JSON para evitar HTML) ===
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('❌ [ERRO INTERNO NO SERVIDOR]', err);
+    if (res.headersSent) {
+      return next(err);
+    }
+    res.status(err.status || 500).json({
+      error: err.message || 'Ocorreu um erro interno no servidor. Por favor, tente novamente.'
+    });
   });
 
   // === VITE / STATIC SERVING ===
