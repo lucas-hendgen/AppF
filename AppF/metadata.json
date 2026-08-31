@@ -1,0 +1,6 @@
+{
+  "name": "Farmácia Super Popular",
+  "description": "Plataforma da Farmácia Super Popular com catálogo interativo, autenticação segura de membros, perfis de clientes, backend Node.js e integração pronta para pagamentos via Mercado Pago.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
