@@ -1,4 +1,4 @@
-import { UserProfile, Order, UserAddress, MercadoPagoConfig, Product } from '../types';
+import { UserProfile, Order, UserAddress, MercadoPagoConfig } from '../types';
 
 const API_BASE = '/api';
 
@@ -56,11 +56,11 @@ export const api = {
     return result;
   },
 
-  async resetPassword(email: string, newPassword: string): Promise<{ token: string; user: UserProfile; message: string }> {
+  async resetPassword(email: string, newPassword: string, code: string): Promise<{ token: string; user: UserProfile; message: string }> {
     const res = await fetch(`${API_BASE}/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, newPassword })
+      body: JSON.stringify({ email, newPassword, code })
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Erro ao redefinir senha.');
@@ -191,6 +191,32 @@ export const api = {
     return result.order;
   },
 
+  async unscheduleOrder(orderId: string): Promise<Order> {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/unschedule`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao aprovar agendamento.');
+    return result.order;
+  },
+
+  async rejectScheduledOrder(orderId: string): Promise<Order> {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/reject-schedule`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao recusar agendamento.');
+    return result.order;
+  },
+
   // === MERCADO PAGO PAYMENTS ===
   async getPaymentConfig(): Promise<MercadoPagoConfig> {
     const res = await fetch(`${API_BASE}/payments/config`);
@@ -274,11 +300,18 @@ export const api = {
   // === ADMIN ===
   async getAdminStats(): Promise<{
     totalRevenue: number;
+    pixRevenue: number;
+    creditCardRevenue: number;
+    debitCardRevenue: number;
+    cashRevenue: number;
+    cancelledCount: number;
+    cancelledRevenue: number;
     totalOrders: number;
     totalMembers: number;
     pendingOrders: number;
     deliveryCount: number;
     pickupCount: number;
+    salesTrend: { date: string; value: number }[];
   }> {
     const res = await fetch(`${API_BASE}/admin/stats`, {
       headers: {
@@ -301,72 +334,154 @@ export const api = {
     return result.users || [];
   },
 
-  // === PRODUCTS (CATÁLOGO FARMACÊUTICO) ===
-  async getProducts(): Promise<Product[]> {
+  // === PRODUTOS ===
+  async fetchProducts(): Promise<import('../types').Product[]> {
     const res = await fetch(`${API_BASE}/products`);
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Erro ao carregar catálogo de produtos.');
+    if (!res.ok) throw new Error(result.error || 'Erro ao carregar produtos.');
     return result.products || [];
   },
 
-  async getProductById(id: number): Promise<Product> {
-    const res = await fetch(`${API_BASE}/products/${id}`);
+  async getAdminProducts(): Promise<import('../types').Product[]> {
+    const res = await fetch(`${API_BASE}/admin/products`, {
+      headers: { ...getAuthHeader() }
+    });
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Produto não encontrado.');
-    return result.product;
+    if (!res.ok) throw new Error(result.error || 'Erro ao carregar produtos.');
+    return result.products || [];
   },
 
-  async createProduct(productData: Partial<Product>): Promise<Product> {
-    const res = await fetch(`${API_BASE}/products`, {
+  async createProduct(data: Omit<import('../types').Product, 'id'>): Promise<import('../types').Product> {
+    const res = await fetch(`${API_BASE}/admin/products`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      body: JSON.stringify(productData)
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(data)
     });
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Erro ao adicionar produto.');
+    if (!res.ok) throw new Error(result.error || 'Erro ao criar produto.');
     return result.product;
   },
 
-  async updateProduct(id: number, updates: Partial<Product>): Promise<Product> {
-    const res = await fetch(`${API_BASE}/products/${id}`, {
+  async updateProduct(id: number, data: Partial<import('../types').Product>): Promise<import('../types').Product> {
+    const res = await fetch(`${API_BASE}/admin/products/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      body: JSON.stringify(updates)
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(data)
     });
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Erro ao atualizar dados do produto.');
+    if (!res.ok) throw new Error(result.error || 'Erro ao atualizar produto.');
     return result.product;
   },
 
-  async updateProductPrice(id: number, price: string): Promise<Product> {
-    const res = await fetch(`${API_BASE}/products/${id}/price`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      body: JSON.stringify({ preco: price })
-    });
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Erro ao atualizar preço do produto.');
-    return result.product;
-  },
-
-  async deleteProduct(id: number): Promise<boolean> {
-    const res = await fetch(`${API_BASE}/products/${id}`, {
+  async deleteProduct(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE}/admin/products/${id}`, {
       method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao remover produto.');
+  },
+
+  // === CUPONS ===
+  async fetchCoupons(): Promise<import('../types').Coupon[]> {
+    const res = await fetch(`${API_BASE}/coupons`, {
       headers: {
         ...getAuthHeader()
       }
     });
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Erro ao excluir produto.');
-    return true;
+    if (!res.ok) throw new Error(result.error || 'Erro ao carregar cupons.');
+    return result.coupons || [];
+  },
+
+  async validateCoupon(code: string): Promise<import('../types').Coupon> {
+    const res = await fetch(`${API_BASE}/coupons/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ code })
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao validar cupom.');
+    return result.coupon;
+  },
+
+  async createCoupon(data: import('../types').Coupon): Promise<import('../types').Coupon> {
+    const res = await fetch(`${API_BASE}/admin/coupons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao criar cupom.');
+    return result.coupon;
+  },
+
+  async deleteCoupon(code: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/admin/coupons/${code}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao remover cupom.');
+  },
+
+  // === BAIRROS / ENTREGAS ===
+  async fetchNeighborhoods(): Promise<import('../types').Neighborhood[]> {
+    const res = await fetch(`${API_BASE}/neighborhoods`);
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao carregar bairros.');
+    return result.neighborhoods || [];
+  },
+
+  async updateNeighborhood(bairro: string, taxa: number): Promise<import('../types').Neighborhood> {
+    const res = await fetch(`${API_BASE}/admin/neighborhoods/${bairro}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ taxa })
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao atualizar taxa de entrega.');
+    return result.neighborhood;
+  },
+
+  // === BANNERS ===
+  async fetchBanners(): Promise<import('../types').Banner[]> {
+    const res = await fetch(`${API_BASE}/banners`);
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao carregar banners.');
+    return result.banners || [];
+  },
+
+  async createBanner(data: Partial<import('../types').Banner>): Promise<import('../types').Banner> {
+    const res = await fetch(`${API_BASE}/admin/banners`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao criar banner.');
+    return result.banner;
+  },
+
+  async updateBanner(id: string, data: Partial<import('../types').Banner>): Promise<import('../types').Banner> {
+    const res = await fetch(`${API_BASE}/admin/banners/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao atualizar banner.');
+    return result.banner;
+  },
+
+  async deleteBanner(id: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/admin/banners/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Erro ao remover banner.');
   }
 };

@@ -1,6 +1,35 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import { INITIAL_PRODUCTS, COUPONS, NEIGHBORHOODS } from '../src/data/pharmacyData.js';
+
+export interface Coupon {
+  codigo: string;
+  tipo_desconto: 'produtos' | 'frete' | 'total' | string;
+  valor_desconto: string;
+  descricao: string;
+}
+
+export interface Neighborhood {
+  bairro: string;
+  taxa: number;
+}
+
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  buttonLink: string;
+  imageUrl?: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+  buttonColor: string;
+  badgeText?: string;
+  iconName?: string;
+  productIds?: number[];
+}
 
 export interface UserAddress {
   id: string;
@@ -26,6 +55,8 @@ export interface UserProfile {
   loyaltyPoints: number;
   healthNotes?: string;
   addresses: UserAddress[];
+  recoveryCode?: string;
+  recoveryCodeExpires?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,6 +95,7 @@ export interface Order {
   status: 'recebido' | 'preparando' | 'em_rota' | 'concluido' | 'cancelado';
   changeAmount?: string;
   notes?: string;
+  scheduled?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -90,6 +122,9 @@ if (!fs.existsSync(DATA_DIR)) {
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+const COUPONS_FILE = path.join(DATA_DIR, 'coupons.json');
+const NEIGHBORHOODS_FILE = path.join(DATA_DIR, 'neighborhoods.json');
+const BANNERS_FILE = path.join(DATA_DIR, 'banners.json');
 
 function readJSON<T>(file: string, fallback: T): T {
   try {
@@ -186,206 +221,8 @@ export function initDatabase() {
   // Inicializar produtos se vazio
   const products = readJSON<Product[]>(PRODUCTS_FILE, []);
   if (products.length === 0) {
-    const defaultProducts: Product[] = [
-      {
-        id: 1,
-        sku: 'MED001',
-        nome: 'Dipirona Monoidratada 500mg (10 comp)',
-        categoria: 'medicamentos',
-        descricao: 'Analgésico e antitérmico de rápida ação para dores de cabeça e febre.',
-        preco: 'Consulte',
-        status: 'Ativo',
-        observacoes: 'Uso oral adulto e pediátrico acima de 15 anos. Consulte a bula.',
-        imagem: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 2,
-        sku: 'MED002',
-        nome: 'Paracetamol 750mg (20 comp)',
-        categoria: 'medicamentos',
-        descricao: 'Alívio sintomático de dores leves a moderadas e redução de febre.',
-        preco: 'Consulte',
-        status: 'Ativo',
-        observacoes: 'Não exceder a dose recomendada na embalagem.',
-        imagem: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 3,
-        sku: 'MED003',
-        nome: 'Ibuprofeno 400mg (10 cápsulas líquidas)',
-        categoria: 'medicamentos',
-        descricao: 'Anti-inflamatório, analgésico e antitérmico para alívio de dores musculares.',
-        preco: 'Consulte',
-        status: 'Ativo',
-        observacoes: 'Venda sob orientação do farmacêutico responsável.',
-        imagem: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 4,
-        sku: 'MED004',
-        nome: 'Soro Fisiológico 0,9% 500ml',
-        categoria: 'medicamentos',
-        descricao: 'Solução estéril de cloreto de sódio para nebulização e limpeza nasal.',
-        preco: '12,90',
-        status: 'Ativo',
-        observacoes: 'Frasco com bico dosador estéril.',
-        imagem: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 5,
-        sku: 'MED005',
-        nome: 'Termômetro Digital Clínico com Alarme',
-        categoria: 'medicamentos',
-        descricao: 'Medição precisa de temperatura em menos de 60 segundos com ponta flexível.',
-        preco: '29,90',
-        status: 'Ativo',
-        observacoes: 'Aprovado pelo INMETRO com memória da última medição.',
-        imagem: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 6,
-        sku: 'HIG001',
-        nome: 'Álcool em Gel 70% Hidratante 500ml',
-        categoria: 'higiene',
-        descricao: 'Higienizador para mãos com Aloe Vera e rápida absorção sem ressecar.',
-        preco: '9,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 7,
-        sku: 'HIG002',
-        nome: 'Sabonete Líquido Antibacteriano 250ml',
-        categoria: 'higiene',
-        descricao: 'Elimina 99,9% das bactérias com fragrância suave de camomila.',
-        preco: '14,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 8,
-        sku: 'HIG003',
-        nome: 'Creme Dental Proteção Total 90g',
-        categoria: 'higiene',
-        descricao: 'Prevenção contra cáries, placa bacteriana e hálito fresco prolongado.',
-        preco: '8,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1559591937-e160e1d0339d?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 9,
-        sku: 'HIG004',
-        nome: 'Fio Dental Encerado Menta 50m',
-        categoria: 'higiene',
-        descricao: 'Desliza facilmente entre os dentes sem desfiar.',
-        preco: '7,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 10,
-        sku: 'HIG005',
-        nome: 'Protetor Solar Facial & Corporal FPS 50 120ml',
-        categoria: 'higiene',
-        descricao: 'Toque seco, alta resistência à água e proteção contra raios UVA/UVB.',
-        preco: '39,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 11,
-        sku: 'PER001',
-        nome: 'Hidratante Corporal Pele Seca 400ml',
-        categoria: 'perfumaria',
-        descricao: 'Hidratação profunda por 48 horas com manteiga de karité e ceramidas.',
-        preco: '24,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 12,
-        sku: 'PER002',
-        nome: 'Desodorante Antitranspirante Aerosol 150ml',
-        categoria: 'perfumaria',
-        descricao: 'Proteção invisível 72h sem manchas nas roupas.',
-        preco: '15,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1619451334792-150fd785ee74?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 13,
-        sku: 'PER003',
-        nome: 'Shampoo Anticaspa e Fortalecedor 350ml',
-        categoria: 'perfumaria',
-        descricao: 'Limpeza profunda do couro cabeludo com piritionato de zinco.',
-        preco: '19,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 14,
-        sku: 'INF001',
-        nome: 'Fraldas Infantis Mega Proteção',
-        categoria: 'infantil',
-        descricao: 'Até 12 horas de absorção com barreiras antivazamento confortáveis.',
-        preco: 'Tamanho#P (38 un):42,90/M (34 un):45,90/G (30 un):48,90/XG (26 un):52,90',
-        status: 'Ativo',
-        classificacaoAdicional: 'Tamanho:radio:P (38 un) +0,00/M (34 un) +0,00/G (30 un) +0,00/XG (26 un) +0,00',
-        imagem: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 15,
-        sku: 'INF002',
-        nome: 'Lenços Umedecidos Hipoalergênicos (100 un)',
-        categoria: 'infantil',
-        descricao: 'Sem álcool etílico, enriquecidos com extrato de camomila e vitamina E.',
-        preco: '12,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 16,
-        sku: 'INF003',
-        nome: 'Pomada Protetora para Assaduras 45g',
-        categoria: 'infantil',
-        descricao: 'Fórmula com óxido de zinco e óleo de amêndoas para prevenir irritações.',
-        preco: '18,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1543362906-acfc16c67564?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 17,
-        sku: 'VIT001',
-        nome: 'Vitamina C 1g Efervescente (10 comp)',
-        categoria: 'vitaminas',
-        descricao: 'Auxilia no fortalecimento do sistema imunológico com sabor laranja.',
-        preco: '29,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1616671285454-94c95d6f8a20?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 18,
-        sku: 'VIT002',
-        nome: 'Multivitamínico de A a Z Completo (60 cáps)',
-        categoria: 'vitaminas',
-        descricao: 'Complexo de 23 vitaminas e minerais essenciais para energia e vitalidade.',
-        preco: '39,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1577401239170-897942555fb3?w=500&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 19,
-        sku: 'VIT003',
-        nome: 'Ômega 3 Puro 1000mg EPA/DHA (120 cáps)',
-        categoria: 'vitaminas',
-        descricao: 'Óleo de peixe de alta pureza livre de metais pesados para a saúde cardiovascular.',
-        preco: '49,90',
-        status: 'Ativo',
-        imagem: 'https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?w=500&auto=format&fit=crop&q=80'
-      }
-    ];
-    writeJSON(PRODUCTS_FILE, defaultProducts);
-    console.log('✅ Catálogo de produtos inicializado com sucesso.');
+    writeJSON(PRODUCTS_FILE, INITIAL_PRODUCTS);
+    console.log('✅ Banco de dados inicializado com produtos padrão.');
   }
 
   // Inicializar pedidos se vazio
@@ -435,6 +272,67 @@ export function initDatabase() {
       updatedAt: new Date().toISOString()
     };
     writeJSON(ORDERS_FILE, [initialOrder]);
+  }
+
+  // Inicializar cupons se vazio
+  const coupons = readJSON<Coupon[]>(COUPONS_FILE, []);
+  if (coupons.length === 0) {
+    writeJSON(COUPONS_FILE, COUPONS);
+    console.log('✅ Banco de dados inicializado com cupons padrão.');
+  }
+
+  // Inicializar bairros se vazio
+  const neighborhoods = readJSON<Neighborhood[]>(NEIGHBORHOODS_FILE, []);
+  if (neighborhoods.length === 0) {
+    writeJSON(NEIGHBORHOODS_FILE, NEIGHBORHOODS);
+    console.log('✅ Banco de dados inicializado com bairros padrão.');
+  }
+
+  // Inicializar banners se vazio
+  const banners = readJSON<any[]>(BANNERS_FILE, []);
+  if (banners.length === 0) {
+    const initialBanners = [
+      {
+        id: "b1",
+        title: "Sua saúde merece o melhor cuidado!",
+        subtitle: "Descontos especiais em medicamentos e cuidados diários.",
+        buttonText: "Aproveite agora!",
+        buttonLink: "#catalog-section",
+        imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop&q=60",
+        bgColor: "bg-gradient-to-br from-emerald-50 to-teal-50/50",
+        textColor: "text-slate-800",
+        borderColor: "border-emerald-100/80",
+        buttonColor: "bg-[#10b981] hover:bg-[#059669] text-white"
+      },
+      {
+        id: "b2",
+        title: "Ofertas da Semana",
+        subtitle: "até 40% OFF",
+        buttonText: "Ver Ofertas",
+        buttonLink: "#catalog-section",
+        imageUrl: "",
+        bgColor: "bg-gradient-to-br from-rose-50 to-red-50/50",
+        textColor: "text-slate-850",
+        borderColor: "border-red-100",
+        buttonColor: "bg-red-600 hover:bg-red-700 text-white",
+        badgeText: "40% OFF",
+        iconName: "Tag"
+      },
+      {
+        id: "b3",
+        title: "Cuidar de você é nossa missão!",
+        subtitle: "Apoio e atenção farmacêutica de verdade.",
+        buttonText: "Saiba Mais",
+        buttonLink: "#catalog-section",
+        imageUrl: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=500&auto=format&fit=crop&q=60",
+        bgColor: "bg-gradient-to-br from-[#064e3b] to-[#047857]",
+        textColor: "text-white",
+        borderColor: "border-emerald-800/30",
+        buttonColor: "bg-white text-emerald-900 hover:bg-emerald-50"
+      }
+    ];
+    writeJSON(BANNERS_FILE, initialBanners);
+    console.log('✅ Banco de dados inicializado com banners padrão.');
   }
 }
 
@@ -504,46 +402,93 @@ export const db = {
     return orders[index];
   },
 
-  // Products CRUD
+  // Products
   getProducts: (): Product[] => readJSON<Product[]>(PRODUCTS_FILE, []),
-  saveProducts: (products: Product[]) => writeJSON(PRODUCTS_FILE, products),
   getProductById: (id: number): Product | undefined => {
     const products = readJSON<Product[]>(PRODUCTS_FILE, []);
     return products.find(p => p.id === id);
   },
-  createProduct: (product: Product): Product => {
+  createProduct: (product: Omit<Product, 'id'>): Product => {
     const products = readJSON<Product[]>(PRODUCTS_FILE, []);
-    products.unshift(product);
+    const maxId = products.reduce((max, p) => Math.max(max, p.id), 0);
+    const newProduct: Product = { ...product, id: maxId + 1 };
+    products.push(newProduct);
     writeJSON(PRODUCTS_FILE, products);
-    return product;
+    return newProduct;
   },
-  updateProduct: (id: number, updates: Partial<Product>): Product | null => {
+  updateProduct: (id: number, updates: Partial<Omit<Product, 'id'>>): Product | null => {
     const products = readJSON<Product[]>(PRODUCTS_FILE, []);
     const index = products.findIndex(p => p.id === id);
     if (index === -1) return null;
-    products[index] = {
-      ...products[index],
-      ...updates
-    };
-    writeJSON(PRODUCTS_FILE, products);
-    return products[index];
-  },
-  updateProductPrice: (id: number, newPrice: string): Product | null => {
-    const products = readJSON<Product[]>(PRODUCTS_FILE, []);
-    const index = products.findIndex(p => p.id === id);
-    if (index === -1) return null;
-    products[index] = {
-      ...products[index],
-      preco: newPrice
-    };
+    products[index] = { ...products[index], ...updates };
     writeJSON(PRODUCTS_FILE, products);
     return products[index];
   },
   deleteProduct: (id: number): boolean => {
     const products = readJSON<Product[]>(PRODUCTS_FILE, []);
-    const filtered = products.filter(p => p.id !== id);
-    if (filtered.length === products.length) return false;
-    writeJSON(PRODUCTS_FILE, filtered);
+    const index = products.findIndex(p => p.id === id);
+    if (index === -1) return false;
+    products.splice(index, 1);
+    writeJSON(PRODUCTS_FILE, products);
+    return true;
+  },
+
+  // Coupons
+  getCoupons: (): Coupon[] => readJSON<Coupon[]>(COUPONS_FILE, []),
+  createCoupon: (coupon: Coupon): Coupon => {
+    const coupons = readJSON<Coupon[]>(COUPONS_FILE, []);
+    const index = coupons.findIndex(c => c.codigo.toUpperCase() === coupon.codigo.toUpperCase());
+    if (index !== -1) {
+      coupons[index] = coupon;
+    } else {
+      coupons.push(coupon);
+    }
+    writeJSON(COUPONS_FILE, coupons);
+    return coupon;
+  },
+  deleteCoupon: (code: string): boolean => {
+    const coupons = readJSON<Coupon[]>(COUPONS_FILE, []);
+    const index = coupons.findIndex(c => c.codigo.toUpperCase() === code.toUpperCase());
+    if (index === -1) return false;
+    coupons.splice(index, 1);
+    writeJSON(COUPONS_FILE, coupons);
+    return true;
+  },
+
+  // Neighborhoods
+  getNeighborhoods: (): Neighborhood[] => readJSON<Neighborhood[]>(NEIGHBORHOODS_FILE, []),
+  updateNeighborhood: (bairro: string, taxa: number): Neighborhood | null => {
+    const neighborhoods = readJSON<Neighborhood[]>(NEIGHBORHOODS_FILE, []);
+    const index = neighborhoods.findIndex(n => n.bairro.toLowerCase() === bairro.toLowerCase());
+    if (index === -1) return null;
+    neighborhoods[index].taxa = Number(taxa);
+    writeJSON(NEIGHBORHOODS_FILE, neighborhoods);
+    return neighborhoods[index];
+  },
+
+  // Banners
+  getBanners: (): Banner[] => readJSON<Banner[]>(BANNERS_FILE, []),
+  createBanner: (banner: Omit<Banner, 'id'>): Banner => {
+    const banners = readJSON<Banner[]>(BANNERS_FILE, []);
+    const maxId = banners.reduce((max, b) => Math.max(max, parseInt(b.id.replace('b', '')) || 0), 0);
+    const newBanner: Banner = { ...banner, id: `b${maxId + 1}` };
+    banners.push(newBanner);
+    writeJSON(BANNERS_FILE, banners);
+    return newBanner;
+  },
+  updateBanner: (id: string, updates: Partial<Omit<Banner, 'id'>>): Banner | null => {
+    const banners = readJSON<Banner[]>(BANNERS_FILE, []);
+    const index = banners.findIndex(b => b.id === id);
+    if (index === -1) return null;
+    banners[index] = { ...banners[index], ...updates };
+    writeJSON(BANNERS_FILE, banners);
+    return banners[index];
+  },
+  deleteBanner: (id: string): boolean => {
+    const banners = readJSON<Banner[]>(BANNERS_FILE, []);
+    const filtered = banners.filter(b => b.id !== id);
+    if (filtered.length === banners.length) return false;
+    writeJSON(BANNERS_FILE, filtered);
     return true;
   }
 };

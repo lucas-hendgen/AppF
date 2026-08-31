@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { X, MapPin, Truck, Store, CreditCard, QrCode, Banknote, Tag, CheckCircle2, ShieldCheck, ArrowRight, ArrowLeft, Sparkles, AlertCircle, Clock, Navigation, LocateFixed, Loader2, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { NEIGHBORHOODS } from '../data/pharmacyData';
+// NEIGHBORHOODS is now loaded dynamically from CartContext
 import { api } from '../services/api';
 import { Order, UserAddress } from '../types';
 import {
@@ -12,6 +12,20 @@ import {
   estimateByNeighborhood,
   DeliveryEstimate
 } from '../utils/geolocation';
+
+function checkScheduledOrder(): boolean {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const currentTime = hours + minutes / 60;
+
+  if (day === 0) { // Domingo
+    return currentTime < 8 || currentTime >= 14;
+  } else { // Segunda a Sábado
+    return currentTime < 8 || currentTime >= 20;
+  }
+}
 
 interface CheckoutModalProps {
   onOrderCreated: (order: Order, paymentType: 'mercadopago_pix' | 'mercadopago_card' | 'other', pixData?: any, prefData?: any) => void;
@@ -32,12 +46,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
     applyCoupon,
     removeCoupon,
     finalTotal,
-    clearCart
+    clearCart,
+    neighborhoods
   } = useCart();
 
   const { user, isAuthenticated, openAuthModal } = useAuth();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [hoursAccepted, setHoursAccepted] = useState(false);
+
+  useEffect(() => {
+    if (!isCheckoutOpen) {
+      setHoursAccepted(false);
+    }
+  }, [isCheckoutOpen]);
+
   const [loading, setLoading] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [couponFeedback, setCouponFeedback] = useState<{ success: boolean; text: string } | null>(null);
@@ -91,7 +114,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
   // Recalculate neighborhood fee & default estimate when neighborhood changes
   useEffect(() => {
     if (deliveryType === 'delivery') {
-      const found = NEIGHBORHOODS.find(n => n.bairro.toLowerCase() === neighborhood.toLowerCase());
+      const found = (neighborhoods || []).find(n => n.bairro.toLowerCase() === neighborhood.toLowerCase());
       const fee = found ? found.taxa : 5.0;
       setDeliveryFee(fee);
       setSelectedNeighborhood(neighborhood);
@@ -174,10 +197,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
     setCep(addr.cep || '88220-000');
   };
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponInput) return;
-    const res = applyCoupon(couponInput);
-    setCouponFeedback({ success: res.success, text: res.message });
+    try {
+      const res = await applyCoupon(couponInput);
+      setCouponFeedback({ success: res.success, text: res.message });
+    } catch (err) {
+      setCouponFeedback({ success: false, text: 'Erro ao validar cupom.' });
+    }
   };
 
   const handleFinalizeOrder = async () => {
@@ -278,7 +305,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-[#111111] rounded-3xl shadow-2xl border border-[#1f2937] overflow-hidden flex flex-col max-h-[92vh] text-[#d1d5db]">
+      <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] text-slate-600">
         
         {/* Header */}
         <div className="p-5 bg-gradient-to-r from-[#064e3b] to-[#047857] text-white flex items-center justify-between border-b border-[#065f46]/30">
@@ -302,7 +329,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
         </div>
 
         {/* Step Progress Bar */}
-        <div className="bg-[#1f2937] h-1.5 w-full flex">
+        <div className="bg-slate-100 h-1.5 w-full flex">
           <div className={`h-full transition-all duration-300 bg-[#10b981] ${
             step === 1 ? 'w-1/3' : step === 2 ? 'w-2/3' : 'w-full'
           }`} />
@@ -311,24 +338,55 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-5">
 
-          {/* Unauthenticated Security Gate */}
-          {!isAuthenticated ? (
+          {/* Operating Hours Alert Interceptor */}
+          {checkScheduledOrder() && !hoursAccepted ? (
+            <div className="py-8 text-center space-y-6 animate-in fade-in duration-300">
+              <div className="w-16 h-16 bg-amber-50 border border-amber-250 rounded-3xl flex items-center justify-center mx-auto text-amber-600 shadow-inner">
+                <Clock className="w-8 h-8 text-amber-800" />
+              </div>
+              <div className="space-y-2.5 max-w-md mx-auto">
+                <h3 className="text-base font-black text-amber-900 tracking-tight flex items-center justify-center gap-1.5 uppercase">
+                  ⚠️ Fora do Horário de Atendimento
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                  A farmácia está fechada no momento (Atendimento: Seg. a Sáb. 08h-20h, Dom. 08h-14h). Seu pedido será recebido e agendado para o próximo período de funcionamento (dia útil seguinte a partir das 08h00).
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 max-w-sm mx-auto pt-2">
+                <button
+                  type="button"
+                  onClick={closeCheckout}
+                  className="flex-1 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs rounded-xl transition-all"
+                >
+                  Sair da Compra
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHoursAccepted(true)}
+                  className="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                >
+                  Aceitar Agendamento
+                </button>
+              </div>
+            </div>
+          ) : !isAuthenticated ? (
             <div className="py-8 text-center space-y-5">
-              <div className="w-16 h-16 bg-emerald-950/80 border border-emerald-700/50 rounded-3xl flex items-center justify-center mx-auto text-emerald-400 shadow-inner">
+              <div className="w-16 h-16 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-center justify-center mx-auto text-emerald-600 shadow-inner">
                 <ShieldCheck className="w-8 h-8" />
               </div>
               <div className="space-y-2 max-w-md mx-auto">
-                <h3 className="text-lg font-bold text-white">Login Obrigatório para Compras</h3>
-                <p className="text-xs text-[#9ca3af] leading-relaxed">
+                <h3 className="text-lg font-bold text-slate-800">Login Obrigatório para Compras</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
                   Para sua segurança, rastreabilidade dos medicamentos e acúmulo de pontos fidelidade, você precisa estar conectado à sua conta.
                 </p>
               </div>
 
-              <div className="p-4 bg-[#161616] border border-[#27272a] rounded-2xl max-w-md mx-auto text-left space-y-2 text-xs">
-                <p className="text-emerald-400 font-bold flex items-center gap-1.5">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl max-w-md mx-auto text-left space-y-2 text-xs">
+                <p className="text-emerald-600 font-bold flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4" /> Vantagens de ser Membro Super Popular:
                 </p>
-                <ul className="space-y-1 text-[11px] text-[#d1d5db]">
+                <ul className="space-y-1 text-[11px] text-slate-600">
                   <li>✓ Endereços de entrega salvos para compras com 1 clique</li>
                   <li>✓ Acompanhamento em tempo real via WhatsApp e painel</li>
                   <li>✓ Acúmulo automático de pontos a cada R$ 1 gasto</li>
@@ -339,14 +397,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 <button
                   type="button"
                   onClick={() => openAuthModal('login', 'Faça login para continuar com a finalização do seu pedido.')}
-                  className="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/60 transition-all text-center"
+                  className="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-100/30 transition-all text-center"
                 >
                   Fazer Login
                 </button>
                 <button
                   type="button"
                   onClick={() => openAuthModal('register', 'Crie sua conta em segundos para concluir sua compra.')}
-                  className="flex-1 py-3 bg-[#161616] hover:bg-[#222222] text-[#d1d5db] border border-[#27272a] font-bold text-xs rounded-xl transition-all text-center"
+                  className="flex-1 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 font-bold text-xs rounded-xl transition-all text-center"
                 >
                   Criar Conta Grátis
                 </button>
@@ -358,7 +416,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
               {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#9ca3af] uppercase mb-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   1. Como deseja receber seus medicamentos?
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -367,14 +425,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                     onClick={() => setDeliveryType('delivery')}
                     className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
                       deliveryType === 'delivery'
-                        ? 'border-[#10b981] bg-emerald-950/40 text-white'
-                        : 'border-[#27272a] bg-[#161616] hover:bg-[#1a1a1a] text-[#d1d5db]'
+                        ? 'border-[#10b981] bg-emerald-50 text-emerald-900'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
                     }`}
                   >
                     <Truck className="w-5 h-5 text-[#10b981] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold text-xs block text-[#f3f4f6]">Entrega Delivery</span>
-                      <span className="text-[11px] text-[#9ca3af]">Motoboy em Itapema</span>
+                      <span className={`font-bold text-xs block ${deliveryType === 'delivery' ? 'text-emerald-900' : 'text-slate-800'}`}>Entrega Delivery</span>
+                      <span className={`text-[11px] ${deliveryType === 'delivery' ? 'text-emerald-700' : 'text-slate-500'}`}>Motoboy em Itapema</span>
                     </div>
                   </button>
 
@@ -383,14 +441,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                     onClick={() => setDeliveryType('pickup')}
                     className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
                       deliveryType === 'pickup'
-                        ? 'border-[#10b981] bg-emerald-950/40 text-white'
-                        : 'border-[#27272a] bg-[#161616] hover:bg-[#1a1a1a] text-[#d1d5db]'
+                        ? 'border-[#10b981] bg-emerald-50 text-emerald-900'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
                     }`}
                   >
                     <Store className="w-5 h-5 text-[#10b981] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold text-xs block text-[#f3f4f6]">Retirar no Balcão</span>
-                      <span className="text-[11px] text-[#9ca3af]">Loja Centro (Sem taxa)</span>
+                      <span className={`font-bold text-xs block ${deliveryType === 'pickup' ? 'text-emerald-900' : 'text-slate-800'}`}>Retirar no Balcão</span>
+                      <span className={`text-[11px] ${deliveryType === 'pickup' ? 'text-emerald-700' : 'text-slate-500'}`}>Loja Centro (Sem taxa)</span>
                     </div>
                   </button>
                 </div>
@@ -403,7 +461,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   {/* Saved Addresses for Members */}
                   {isAuthenticated && user && user.addresses && user.addresses.length > 0 && (
                     <div>
-                      <span className="text-xs font-bold text-[#9ca3af] uppercase block mb-1.5">
+                      <span className="text-xs font-bold text-slate-500 uppercase block mb-1.5">
                         Endereços Salvos da sua Conta:
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -414,96 +472,96 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                             onClick={() => handleSelectSavedAddress(addr)}
                             className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
                               selectedAddressId === addr.id
-                                ? 'border-[#10b981] bg-emerald-950/50 text-white font-semibold'
-                                : 'border-[#27272a] bg-[#161616] text-[#d1d5db]'
+                                ? 'border-[#10b981] bg-emerald-50 text-emerald-950 font-semibold'
+                                : 'border-slate-200 bg-slate-50 text-slate-600'
                             }`}
                           >
-                            <p className="font-bold truncate text-[#f3f4f6]">{addr.street}, {addr.number}</p>
-                            <p className="text-[11px] text-[#9ca3af]">{addr.neighborhood} - {addr.city}</p>
+                            <p className={`font-bold truncate ${selectedAddressId === addr.id ? 'text-emerald-950' : 'text-slate-800'}`}>{addr.street}, {addr.number}</p>
+                            <p className="text-[11px] text-slate-500">{addr.neighborhood} - {addr.city}</p>
                           </button>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  <div className="p-4 bg-[#161616] border border-[#1f2937] rounded-2xl space-y-3">
-                    <span className="text-xs font-bold text-[#f3f4f6] uppercase block">
+                  <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+                    <span className="text-xs font-bold text-slate-800 uppercase block">
                       Local de Entrega em Itapema
                     </span>
                     
                     <div className="grid grid-cols-3 gap-2">
                       <div className="col-span-2">
-                        <label className="text-[11px] font-semibold text-[#9ca3af] block mb-1">Rua / Av *</label>
+                        <label className="text-[11px] font-semibold text-slate-500 block mb-1">Rua / Av *</label>
                         <input
                           type="text"
                           required
                           value={street}
                           onChange={(e) => setStreet(e.target.value)}
                           placeholder="Ex: Av. Nereu Ramos"
-                          className="w-full px-3 py-2 bg-[#111111] border border-[#27272a] rounded-xl text-xs text-[#f3f4f6] placeholder-[#6b7280] focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-[#9ca3af] block mb-1">Número *</label>
+                        <label className="text-[11px] font-semibold text-slate-500 block mb-1">Número *</label>
                         <input
                           type="text"
                           required
                           value={number}
                           onChange={(e) => setNumber(e.target.value)}
                           placeholder="123"
-                          className="w-full px-3 py-2 bg-[#111111] border border-[#27272a] rounded-xl text-xs text-[#f3f4f6] placeholder-[#6b7280] focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] font-semibold text-[#9ca3af] block mb-1">Bairro *</label>
+                        <label className="text-[11px] font-semibold text-slate-500 block mb-1">Bairro *</label>
                         <select
                           value={neighborhood}
                           onChange={(e) => setNeighborhood(e.target.value)}
-                          className="w-full px-3 py-2 bg-[#111111] border border-[#27272a] rounded-xl text-xs text-[#f3f4f6] focus:ring-2 focus:ring-[#10b981] focus:outline-none capitalize"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-[#10b981] focus:outline-none capitalize"
                         >
-                          {NEIGHBORHOODS.map(n => (
-                            <option key={n.bairro} value={n.bairro} className="bg-[#111111] text-white">
+                          {(neighborhoods || []).map(n => (
+                            <option key={n.bairro} value={n.bairro} className="bg-white text-slate-800">
                               {n.bairro.charAt(0).toUpperCase() + n.bairro.slice(1)} (Taxa: R$ {n.taxa.toFixed(2).replace('.', ',')})
                             </option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-[#9ca3af] block mb-1">Complemento</label>
+                        <label className="text-[11px] font-semibold text-slate-500 block mb-1">Complemento</label>
                         <input
                           type="text"
                           value={complement}
                           onChange={(e) => setComplement(e.target.value)}
                           placeholder="Apto, Bloco, etc."
-                          className="w-full px-3 py-2 bg-[#111111] border border-[#27272a] rounded-xl text-xs text-[#f3f4f6] placeholder-[#6b7280] focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Geolocation & Delivery Time Estimation Card */}
-                  <div className="p-4 bg-gradient-to-br from-[#121f19] to-[#162920] border border-emerald-800/50 rounded-2xl space-y-3 shadow-lg">
+                  <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100 rounded-2xl space-y-3 shadow-lg">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-400">
+                        <div className="p-2 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-600">
                           <Clock className="w-5 h-5" />
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                               Estimativa de Entrega
                             </h4>
                             {gpsActive && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-700 border border-emerald-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-450 animate-pulse"></span>
                                 GPS Ativo
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-[#9ca3af]">
+                          <p className="text-[11px] text-slate-500">
                             Tempo calculado pela distância até a matriz
                           </p>
                         </div>
@@ -511,19 +569,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
                       {/* Live Estimated Minutes Badge */}
                       <div className="text-right shrink-0">
-                        <div className="inline-block px-3 py-1 bg-emerald-950 border border-emerald-500/40 rounded-xl text-emerald-300 font-extrabold text-sm shadow-inner">
+                        <div className="inline-block px-3 py-1 bg-emerald-600 border border-emerald-500 rounded-xl text-white font-extrabold text-sm shadow-inner">
                           ⚡ {deliveryEstimate.formattedTime}
                         </div>
-                        <p className="text-[10px] text-emerald-400/80 mt-0.5 font-medium">
+                        <p className="text-[10px] text-emerald-700 mt-0.5 font-medium">
                           ~{deliveryEstimate.distanceKm.toFixed(1)} km da farmácia
                         </p>
                       </div>
                     </div>
 
                     {/* Geolocation Trigger Button & Info */}
-                    <div className="pt-2 border-t border-emerald-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-                      <div className="text-[11px] text-[#9ca3af] flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <div className="pt-2 border-t border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         <span>Base: <strong>Av. Nereu Ramos, 897 (Centro)</strong></span>
                       </div>
 
@@ -533,13 +591,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         disabled={isLocatingGps}
                         className={`w-full sm:w-auto px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
                           gpsActive
-                            ? 'bg-emerald-900/70 hover:bg-emerald-900 text-emerald-200 border border-emerald-600/50'
-                            : 'bg-emerald-950 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/60'
+                            ? 'bg-emerald-800 hover:bg-emerald-900 text-white border border-emerald-600'
+                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
                         }`}
                       >
                         {isLocatingGps ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
                             <span>Calculando GPS...</span>
                           </>
                         ) : gpsActive ? (
@@ -549,7 +607,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                           </>
                         ) : (
                           <>
-                            <LocateFixed className="w-3.5 h-3.5 text-emerald-400" />
+                            <LocateFixed className="w-3.5 h-3.5 text-emerald-600" />
                             <span>Calcular via Meu GPS</span>
                           </>
                         )}
@@ -560,21 +618,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                     {geoFeedback && (
                       <div className={`p-2 rounded-xl text-[11px] font-medium flex items-center gap-1.5 ${
                         geoFeedback.type === 'success'
-                          ? 'bg-emerald-950/90 text-emerald-200 border border-emerald-700/50'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                           : geoFeedback.type === 'error'
-                          ? 'bg-amber-950/90 text-amber-200 border border-amber-800/50'
-                          : 'bg-[#1f2937] text-[#9ca3af]'
+                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                          : 'bg-slate-100 text-slate-500'
                       }`}>
                         {geoFeedback.type === 'success' ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         ) : (
-                          <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         )}
                         <span>{geoFeedback.message}</span>
                       </div>
                     )}
 
-                    <p className="text-[10px] text-[#6b7280] italic">
+                    <p className="text-[10px] text-slate-400 italic">
                       * O tempo estimado inclui separação com conferência farmacêutica (15 min) + deslocamento do motoboy.
                     </p>
                   </div>
@@ -583,18 +641,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
               {/* Pickup Estimation Card */}
               {deliveryType === 'pickup' && (
-                <div className="p-4 bg-gradient-to-br from-[#121f19] to-[#162920] border border-emerald-800/50 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-md">
+                <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-md">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-xl">
+                    <div className="p-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 rounded-xl">
                       <Store className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-white">Retirada Rápida no Balcão</h4>
-                      <p className="text-[11px] text-[#9ca3af]">Farmácia Super Popular • Av. Nereu Ramos, 897 (Centro)</p>
+                      <h4 className="font-bold text-slate-800">Retirada Rápida no Balcão</h4>
+                      <p className="text-[11px] text-slate-500">Farmácia Super Popular • Av. Nereu Ramos, 897 (Centro)</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-500/40 rounded-xl font-bold text-xs">
+                    <span className="px-3 py-1 bg-emerald-600 text-white border border-emerald-500 rounded-xl font-bold text-xs">
                       ⚡ 15 a 20 min
                     </span>
                   </div>
@@ -605,7 +663,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-950/60 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2"
                 >
                   <span>Continuar para Identificação</span>
                   <ArrowRight className="w-4 h-4" />
@@ -618,15 +676,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
           {step === 2 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#9ca3af] uppercase mb-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   2. Dados do Comprador / Recebedor
                 </label>
 
                 {!isAuthenticated && (
-                  <div className="p-3 mb-3 bg-emerald-950/40 border border-emerald-800/40 rounded-2xl flex items-center justify-between">
+                  <div className="p-3 mb-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="text-xs text-emerald-200 font-medium">Já possui conta de membro?</span>
+                      <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="text-xs text-emerald-800 font-medium">Já possui conta de membro?</span>
                     </div>
                     <button
                       type="button"
@@ -640,43 +698,43 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[11px] font-bold text-[#9ca3af] uppercase block mb-1">Nome Completo *</label>
+                    <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Nome Completo *</label>
                     <input
                       type="text"
                       required
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="Ex: Carlos Silveira"
-                      className="w-full px-3.5 py-2.5 bg-[#161616] border border-[#27272a] rounded-xl text-sm text-[#f3f4f6] placeholder-[#6b7280] focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none focus:bg-white"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-bold text-[#9ca3af] uppercase block mb-1">WhatsApp *</label>
+                      <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">WhatsApp *</label>
                       <input
                         type="tel"
                         required
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
                         placeholder="(47) 99999-9999"
-                        className="w-full px-3.5 py-2.5 bg-[#161616] border border-[#27272a] rounded-xl text-sm text-[#f3f4f6] placeholder-[#6b7280] focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none focus:bg-white"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-[#9ca3af] uppercase block mb-1">CPF (Opcional)</label>
+                      <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">CPF (Opcional)</label>
                       <input
                         type="text"
                         value={customerCpf}
                         onChange={(e) => setCustomerCpf(e.target.value)}
                         placeholder="000.000.000-00"
-                        className="w-full px-3.5 py-2.5 bg-[#161616] border border-[#27272a] rounded-xl text-sm text-[#f3f4f6] placeholder-[#6b7280] focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none focus:bg-white"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-[#9ca3af] uppercase block mb-1">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
                       Observações para a Entrega / Farmácia
                     </label>
                     <textarea
@@ -684,7 +742,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                       value={orderNotes}
                       onChange={(e) => setOrderNotes(e.target.value)}
                       placeholder="Ex: Deixar na portaria, troco para nota de R$ 50..."
-                      className="w-full px-3.5 py-2 bg-[#161616] border border-[#27272a] rounded-xl text-xs text-[#f3f4f6] placeholder-[#6b7280] focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none focus:bg-white"
                     ></textarea>
                   </div>
                 </div>
@@ -694,14 +752,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="w-1/3 py-3 bg-[#161616] hover:bg-[#222222] text-[#d1d5db] border border-[#27272a] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
+                  className="w-1/3 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
                 >
                   <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="w-2/3 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-950/60 transition-all flex items-center justify-center gap-2"
+                  className="w-2/3 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2"
                 >
                   <span>Forma de Pagamento</span>
                   <ArrowRight className="w-4 h-4" />
@@ -715,16 +773,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
             <div className="space-y-4">
               
               {/* Coupon Field */}
-              <div className="p-3.5 bg-[#161616] border border-[#1f2937] rounded-2xl space-y-2">
+              <div className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#f3f4f6] uppercase flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
                     <Tag className="w-3.5 h-3.5 text-[#10b981]" /> Cupom de Desconto
                   </span>
                   {appliedCoupon && (
                     <button
                       type="button"
                       onClick={removeCoupon}
-                      className="text-[11px] font-bold text-red-400 hover:underline"
+                      className="text-[11px] font-bold text-red-600 hover:underline"
                     >
                       Remover ({appliedCoupon.codigo})
                     </button>
@@ -738,7 +796,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       placeholder="Digite POPULAR10 ou FRETEGRATIS"
-                      className="flex-1 px-3 py-2 bg-[#111111] border border-[#27272a] rounded-xl text-xs uppercase font-mono text-[#f3f4f6] placeholder-[#6b7280] focus:ring-1 focus:ring-[#10b981] focus:outline-none"
+                      className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs uppercase font-mono text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-[#10b981] focus:outline-none"
                     />
                     <button
                       type="button"
@@ -749,14 +807,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                     </button>
                   </div>
                 ) : (
-                  <div className="p-2 bg-emerald-950/60 border border-emerald-700/50 rounded-xl text-xs text-emerald-300 font-semibold flex items-center justify-between">
+                  <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-semibold flex items-center justify-between">
                     <span>✓ Cupom {appliedCoupon.codigo} aplicado</span>
-                    <span className="text-emerald-400 font-bold">- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-emerald-600 font-bold">- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
 
                 {couponFeedback && !appliedCoupon && (
-                  <p className={`text-[11px] font-medium ${couponFeedback.success ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <p className={`text-[11px] font-medium ${couponFeedback.success ? 'text-emerald-600' : 'text-red-600'}`}>
                     {couponFeedback.text}
                   </p>
                 )}
@@ -764,7 +822,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
               {/* Payment Methods */}
               <div>
-                <label className="block text-xs font-bold text-[#9ca3af] uppercase mb-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   3. Escolha a Forma de Pagamento
                 </label>
 
@@ -773,8 +831,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   {/* Mercado Pago PIX Instantaneo */}
                   <label className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${
                     paymentMethod === 'mercadopago_pix'
-                      ? 'border-[#009EE3] bg-blue-950/40 shadow-sm text-white'
-                      : 'border-[#27272a] bg-[#161616] hover:bg-[#1a1a1a] text-[#d1d5db]'
+                      ? 'border-[#009EE3] bg-sky-50 shadow-sm text-sky-900'
+                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-slate-600'
                   }`}>
                     <div className="flex items-center gap-3">
                       <input
@@ -788,12 +846,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         <QrCode className="w-5 h-5 text-[#009EE3]" />
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-[#f3f4f6]">Mercado Pago (PIX Instantâneo)</span>
+                            <span className={`text-xs font-bold ${paymentMethod === 'mercadopago_pix' ? 'text-sky-950' : 'text-slate-800'}`}>Mercado Pago (PIX Instantâneo)</span>
                             <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-[#009EE3] text-white rounded">
                               Recomendado
                             </span>
                           </div>
-                          <p className="text-[11px] text-[#9ca3af]">QR Code gerado na hora com aprovação imediata</p>
+                          <p className={`text-[11px] ${paymentMethod === 'mercadopago_pix' ? 'text-sky-800' : 'text-slate-400'}`}>QR Code gerado na hora com aprovação imediata</p>
                         </div>
                       </div>
                     </div>
@@ -802,8 +860,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   {/* Mercado Pago Cartao */}
                   <label className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${
                     paymentMethod === 'mercadopago_card'
-                      ? 'border-[#009EE3] bg-blue-950/40 shadow-sm text-white'
-                      : 'border-[#27272a] bg-[#161616] hover:bg-[#1a1a1a] text-[#d1d5db]'
+                      ? 'border-[#009EE3] bg-sky-50 shadow-sm text-sky-900'
+                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-slate-600'
                   }`}>
                     <div className="flex items-center gap-3">
                       <input
@@ -816,8 +874,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                       <div className="flex items-center gap-2">
                         <CreditCard className="w-5 h-5 text-[#009EE3]" />
                         <div>
-                          <span className="text-xs font-bold text-[#f3f4f6]">Mercado Pago (Cartão de Crédito / Débito)</span>
-                          <p className="text-[11px] text-[#9ca3af]">Parcele em até 6x com proteção ao comprador</p>
+                          <span className={`text-xs font-bold ${paymentMethod === 'mercadopago_card' ? 'text-sky-950' : 'text-slate-800'}`}>Mercado Pago (Cartão de Crédito / Débito)</span>
+                          <p className={`text-[11px] ${paymentMethod === 'mercadopago_card' ? 'text-sky-800' : 'text-slate-400'}`}>Parcele em até 6x com proteção ao comprador</p>
                         </div>
                       </div>
                     </div>
@@ -826,8 +884,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   {/* Dinheiro */}
                   <label className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${
                     paymentMethod === 'dinheiro'
-                      ? 'border-[#10b981] bg-emerald-950/40 shadow-sm text-white'
-                      : 'border-[#27272a] bg-[#161616] hover:bg-[#1a1a1a] text-[#d1d5db]'
+                      ? 'border-[#10b981] bg-emerald-50 shadow-sm text-emerald-950'
+                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-slate-600'
                   }`}>
                     <div className="flex items-center gap-3">
                       <input
@@ -840,8 +898,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                       <div className="flex items-center gap-2">
                         <Banknote className="w-5 h-5 text-[#10b981]" />
                         <div>
-                          <span className="text-xs font-bold text-[#f3f4f6]">Dinheiro na Entrega / Balcão</span>
-                          <p className="text-[11px] text-[#9ca3af]">Pague em espécie ao receber os produtos</p>
+                          <span className={`text-xs font-bold ${paymentMethod === 'dinheiro' ? 'text-emerald-950' : 'text-slate-800'}`}>Dinheiro na Entrega / Balcão</span>
+                          <p className={`text-[11px] ${paymentMethod === 'dinheiro' ? 'text-emerald-800' : 'text-slate-400'}`}>Pague em espécie ao receber os produtos</p>
                         </div>
                       </div>
                     </div>
@@ -849,8 +907,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
                   {/* Troco se dinheiro */}
                   {paymentMethod === 'dinheiro' && (
-                    <div className="p-3 bg-[#161616] rounded-xl border border-[#27272a] space-y-2 text-xs">
-                      <label className="flex items-center gap-2 font-semibold text-[#d1d5db]">
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
+                      <label className="flex items-center gap-2 font-semibold text-slate-600">
                         <input
                           type="checkbox"
                           checked={needsChange}
@@ -865,7 +923,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                           value={changeAmount}
                           onChange={(e) => setChangeAmount(e.target.value)}
                           placeholder="Troco para quanto? (Ex: R$ 50,00)"
-                          className="w-full px-3 py-1.5 bg-[#111111] border border-[#27272a] rounded-lg text-xs text-[#f3f4f6] placeholder-[#6b7280] focus:ring-1 focus:ring-[#10b981]"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-[#10b981]"
                         />
                       )}
                     </div>
@@ -874,8 +932,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   {/* Cartao Maquininha */}
                   <label className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${
                     paymentMethod === 'cartao_entrega'
-                      ? 'border-[#10b981] bg-emerald-950/40 shadow-sm text-white'
-                      : 'border-[#27272a] bg-[#161616] hover:bg-[#1a1a1a] text-[#d1d5db]'
+                      ? 'border-[#10b981] bg-emerald-50 shadow-sm text-emerald-950'
+                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-slate-600'
                   }`}>
                     <div className="flex items-center gap-3">
                       <input
@@ -886,10 +944,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         className="text-[#10b981] focus:ring-[#10b981]"
                       />
                       <div className="flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-[#9ca3af]" />
+                        <CreditCard className="w-5 h-5 text-slate-400" />
                         <div>
-                          <span className="text-xs font-bold text-[#f3f4f6]">Maquininha de Cartão na Entrega</span>
-                          <p className="text-[11px] text-[#9ca3af]">Crédito, Débito ou Vale-Alimentação/Refeição</p>
+                          <span className={`text-xs font-bold ${paymentMethod === 'cartao_entrega' ? 'text-emerald-950' : 'text-slate-800'}`}>Maquininha de Cartão na Entrega</span>
+                          <p className={`text-[11px] ${paymentMethod === 'cartao_entrega' ? 'text-emerald-800' : 'text-slate-400'}`}>Crédito, Débito ou Vale-Alimentação/Refeição</p>
                         </div>
                       </div>
                     </div>
@@ -898,37 +956,50 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 </div>
               </div>
 
-              {/* Financial Breakdown */}
-              <div className="p-4 bg-[#161616] rounded-2xl border border-[#1f2937] space-y-2 text-xs">
-                <div className="flex justify-between text-[#9ca3af]">
-                  <span>Subtotal dos Produtos</span>
-                  <span className="text-[#f3f4f6]">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+              {/* operating hours scheduled warning */}
+              {checkScheduledOrder() && (
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col gap-1 text-[11px] text-amber-800 leading-relaxed font-bold animate-in fade-in">
+                  <div className="flex items-center gap-1.5 text-amber-900 font-extrabold text-xs">
+                    <Clock className="w-4 h-4 text-amber-800 shrink-0" />
+                    <span>⚠️ Fora do Horário de Atendimento</span>
+                  </div>
+                  <p className="font-semibold text-amber-750">
+                    A farmácia está fechada no momento (Atendimento: Seg. a Sáb. 08h-20h, Dom. 08h-14h). Seu pedido será recebido e agendado para o próximo período de funcionamento (dia útil seguinte a partir das 08h00).
+                  </p>
                 </div>
-                <div className="flex justify-between text-[#9ca3af]">
+              )}
+
+              {/* Financial Breakdown */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2 text-xs">
+                <div className="flex justify-between text-slate-500">
+                  <span>Subtotal dos Produtos</span>
+                  <span className="text-slate-800 font-semibold">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div className="flex justify-between text-slate-500">
                   <span>Taxa de Entrega</span>
-                  <span className="text-[#f3f4f6]">{deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2).replace('.', ',')}` : 'Grátis'}</span>
+                  <span className="text-slate-800 font-semibold">{deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2).replace('.', ',')}` : 'Grátis'}</span>
                 </div>
                 {couponDiscount > 0 && (
-                  <div className="flex justify-between text-emerald-400 font-semibold">
+                  <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Desconto do Cupom</span>
                     <span>- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
 
                 {/* Live Delivery Time Estimate Indicator */}
-                <div className="p-2.5 bg-emerald-950/40 border border-emerald-800/40 rounded-xl flex items-center justify-between">
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span className="text-emerald-200 font-medium">
+                    <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="text-emerald-800 font-medium">
                       {deliveryType === 'delivery' ? 'Previsão de Entrega (Motoboy)' : 'Retirada no Balcão'}
                     </span>
                   </div>
-                  <span className="font-extrabold text-emerald-300">
+                  <span className="font-extrabold text-emerald-700">
                     {deliveryType === 'delivery' ? deliveryEstimate.formattedTime : '15 a 20 min'}
                   </span>
                 </div>
 
-                <div className="pt-2 border-t border-[#1f2937] flex justify-between font-extrabold text-sm text-[#f3f4f6]">
+                <div className="pt-2 border-t border-slate-200 flex justify-between font-extrabold text-sm text-slate-800">
                   <span>Total Final</span>
                   <span className="text-[#10b981] text-base">R$ {finalTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
@@ -939,7 +1010,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="w-1/3 py-3.5 bg-[#161616] hover:bg-[#222222] text-[#d1d5db] border border-[#27272a] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
+                  className="w-1/3 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
                 >
                   <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
@@ -947,7 +1018,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   type="button"
                   disabled={loading}
                   onClick={handleFinalizeOrder}
-                  className="w-2/3 py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-950/60 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-2/3 py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <span>Processando Pedido...</span>

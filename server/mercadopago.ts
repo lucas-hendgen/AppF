@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { db, Order } from './db.js';
+import { AuthenticatedRequest } from './auth.js';
 
 interface MercadoPagoPreferencePayload {
   items: Array<{
@@ -50,39 +51,42 @@ export const mercadoPagoController = {
   },
 
   // Cria preferência de pagamento (Cartão ou Checkout Transparente Mercado Pago)
-  async createPreference(req: Request, res: Response): Promise<void> {
+  async createPreference(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { orderId, items, payer, deliveryFee = 0, discount = 0 } = req.body;
+      const { orderId, payer } = req.body;
 
-      if (!orderId || !items || !Array.isArray(items)) {
-        res.status(400).json({ error: 'Dados do pedido inválidos para gerar pagamento.' });
+      if (!orderId) {
+        res.status(400).json({ error: 'ID do pedido é obrigatório para gerar pagamento.' });
+        return;
+      }
+
+      // Busca o pedido no banco de dados para evitar adulteração de preço (Price Tampering)
+      const order = db.getOrderById(orderId);
+      if (!order) {
+        res.status(404).json({ error: 'Pedido não encontrado.' });
+        return;
+      }
+
+      // Verifica se o pedido pertence ao usuário logado (ou se é admin)
+      if (req.user?.role !== 'admin' && order.userId !== req.user?.id) {
+        res.status(403).json({ error: 'Acesso negado. Você não tem permissão para realizar o pagamento deste pedido.' });
         return;
       }
 
       const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
       const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
 
-      // Montar itens formatados para o Mercado Pago
-      const mpItems = items.map((item: any) => ({
-        id: String(item.id || item.sku || 'item'),
-        title: item.name || item.nome || 'Produto Farmácia Super Popular',
-        description: item.notes || item.descricao || '',
-        quantity: Number(item.quantity || 1),
-        unit_price: Number(item.price || item.preco || 0),
-        currency_id: 'BRL'
-      }));
-
-      // Adicionar taxa de entrega se houver
-      if (deliveryFee > 0) {
-        mpItems.push({
-          id: 'delivery_fee',
-          title: 'Taxa de Entrega (Delivery)',
-          description: 'Entrega Farmácia Super Popular',
+      // Consolida o pagamento em um único item com o valor total seguro do banco de dados
+      const mpItems = [
+        {
+          id: order.id,
+          title: `Pedido ${order.id} - Farmácia Super Popular`,
+          description: `Pagamento seguro do pedido ${order.id}`,
           quantity: 1,
-          unit_price: Number(deliveryFee),
+          unit_price: Number(order.total),
           currency_id: 'BRL'
-        });
-      }
+        }
+      ];
 
       // Se houver token configurado, faz chamada real à API v1 do Mercado Pago
       if (accessToken && accessToken.trim() !== '') {
@@ -90,7 +94,7 @@ export const mercadoPagoController = {
           const preferenceData: MercadoPagoPreferencePayload = {
             items: mpItems,
             payer: {
-              name: payer?.name || 'Cliente Farmácia Super Popular',
+              name: payer?.name || order.customerName || 'Cliente Farmácia Super Popular',
               email: payer?.email || 'cliente@farmaciasuperpopular.com.br',
               phone: {
                 number: payer?.phone ? payer.phone.replace(/\D/g, '') : undefined
@@ -166,15 +170,29 @@ export const mercadoPagoController = {
   },
 
   // Cria pagamento PIX instantâneo via Mercado Pago (com QR Code e Copia e Cola)
-  async createPixPayment(req: Request, res: Response): Promise<void> {
+  async createPixPayment(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { orderId, amount, payerEmail, payerName, payerCpf } = req.body;
+      const { orderId, payerEmail, payerName, payerCpf } = req.body;
 
-      if (!orderId || !amount) {
-        res.status(400).json({ error: 'Dados insuficientes para gerar pagamento PIX.' });
+      if (!orderId) {
+        res.status(400).json({ error: 'ID do pedido é obrigatório para gerar pagamento PIX.' });
         return;
       }
 
+      // Busca o pedido no banco de dados para evitar adulteração de preço (Price Tampering)
+      const order = db.getOrderById(orderId);
+      if (!order) {
+        res.status(404).json({ error: 'Pedido não encontrado.' });
+        return;
+      }
+
+      // Verifica se o pedido pertence ao usuário logado (ou se é admin)
+      if (req.user?.role !== 'admin' && order.userId !== req.user?.id) {
+        res.status(403).json({ error: 'Acesso negado. Você não tem permissão para realizar o pagamento deste pedido.' });
+        return;
+      }
+
+      const amount = order.total; // Utiliza o total seguro registrado no banco de dados
       const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
       const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
 
@@ -187,7 +205,7 @@ export const mercadoPagoController = {
             payment_method_id: 'pix',
             payer: {
               email: payerEmail || 'cliente@farmaciasuperpopular.com.br',
-              first_name: payerName ? payerName.split(' ')[0] : 'Cliente',
+              first_name: payerName ? payerName.split(' ')[0] : (order.customerName ? order.customerName.split(' ')[0] : 'Cliente'),
               last_name: payerName && payerName.split(' ').length > 1 ? payerName.split(' ').slice(1).join(' ') : 'Popular',
               identification: payerCpf ? {
                 type: 'CPF',
@@ -264,13 +282,19 @@ export const mercadoPagoController = {
   },
 
   // Verifica status do pagamento (Polling ou Consulta de pedido)
-  async checkPaymentStatus(req: Request, res: Response): Promise<void> {
+  async checkPaymentStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { orderId } = req.params;
       const order = db.getOrderById(orderId);
 
       if (!order) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
+        return;
+      }
+
+      // Verifica propriedade ou admin
+      if (req.user?.role !== 'admin' && order.userId !== req.user?.id) {
+        res.status(403).json({ error: 'Acesso negado. Você não tem permissão para visualizar o status deste pedido.' });
         return;
       }
 
@@ -314,13 +338,19 @@ export const mercadoPagoController = {
   },
 
   // Simula confirmação de pagamento (para testes locais rápidos)
-  async simulatePaymentApproval(req: Request, res: Response): Promise<void> {
+  async simulatePaymentApproval(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { orderId } = req.body;
       const order = db.getOrderById(orderId);
 
       if (!order) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
+        return;
+      }
+
+      // Apenas admin pode simular aprovação de pagamento
+      if (req.user?.role !== 'admin') {
+        res.status(403).json({ error: 'Acesso negado. Apenas administradores podem simular aprovação de pagamento.' });
         return;
       }
 

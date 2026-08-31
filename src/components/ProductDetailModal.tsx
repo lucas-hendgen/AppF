@@ -79,24 +79,24 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-[#111111] rounded-3xl shadow-2xl border border-[#1f2937] overflow-hidden flex flex-col max-h-[90vh] text-[#d1d5db]">
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] text-slate-600">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 text-[#9ca3af] hover:text-white bg-[#161616]/80 hover:bg-[#222222] backdrop-blur border border-[#27272a] rounded-full shadow-lg transition-all"
+          className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-slate-700 bg-slate-50/80 hover:bg-slate-100 backdrop-blur border border-slate-200/60 rounded-full shadow-lg transition-all"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Product Image Banner */}
-        <div className="relative w-full h-64 bg-[#161616] flex items-center justify-center p-6 border-b border-[#1f2937]">
+        <div className="relative w-full h-64 bg-slate-50/50 flex items-center justify-center p-6 border-b border-slate-100">
           <img
             src={product.imagem}
             alt={product.nome}
             className="w-full h-full object-contain"
           />
-          <span className="absolute bottom-3 left-4 text-xs font-mono font-bold px-2.5 py-1 bg-black/80 text-[#9ca3af] border border-[#27272a] rounded-lg backdrop-blur-sm">
+          <span className="absolute bottom-3 left-4 text-xs font-mono font-bold px-2.5 py-1 bg-slate-200/70 text-slate-500 border border-slate-300/30 rounded-lg backdrop-blur-sm">
             SKU: {product.sku}
           </span>
         </div>
@@ -107,28 +107,28 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
             <span className="text-xs uppercase font-extrabold text-[#10b981] tracking-wider block mb-1">
               {product.categoria}
             </span>
-            <h2 className="text-lg sm:text-xl font-bold text-[#f3f4f6] leading-tight">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800 leading-tight">
               {product.nome}
             </h2>
-            <p className="text-xs text-[#9ca3af] leading-relaxed mt-2">
+            <p className="text-xs text-slate-500 leading-relaxed mt-2">
               {product.descricao}
             </p>
           </div>
 
           {/* Observations / Warning */}
           {product.observacoes && (
-            <div className="p-3.5 bg-amber-950/40 border border-amber-800/40 rounded-2xl text-xs text-amber-200 space-y-1">
-              <span className="font-bold flex items-center gap-1 text-amber-300">
-                <ShieldCheck className="w-4 h-4 text-amber-400" /> Orientação Farmacêutica
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800 space-y-1">
+              <span className="font-bold flex items-center gap-1 text-amber-700">
+                <ShieldCheck className="w-4 h-4 text-amber-600" /> Orientação Farmacêutica
               </span>
-              <p className="text-[11px] text-amber-300/80">{product.observacoes}</p>
+              <p className="text-[11px] text-amber-700/80">{product.observacoes}</p>
             </div>
           )}
 
           {/* Variations Selector (e.g. Diaper sizes P, M, G, XG) */}
           {variationOptions.length > 0 && (
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-[#9ca3af] uppercase">
+              <label className="block text-xs font-bold text-slate-500 uppercase">
                 Selecione a Opção / Tamanho:
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -139,12 +139,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                     onClick={() => setSelectedVariation(vo.raw)}
                     className={`p-3 rounded-xl border text-left text-xs font-semibold transition-all ${
                       selectedVariation === vo.raw
-                        ? 'border-[#10b981] bg-emerald-950/60 text-[#10b981] shadow-md'
-                        : 'border-[#27272a] bg-[#161616] text-[#d1d5db] hover:bg-[#222222] hover:text-white'
+                        ? 'border-[#10b981] bg-emerald-50 text-emerald-700 shadow-md'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
                     }`}
                   >
                     <p className="font-bold">{vo.name}</p>
-                    <p className="text-xs text-[#10b981]">R$ {vo.price.toFixed(2).replace('.', ',')}</p>
+                    <p className="text-xs text-emerald-600">R$ {vo.price.toFixed(2).replace('.', ',')}</p>
                   </button>
                 ))}
               </div>
@@ -153,7 +153,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
           {/* Special Notes Input */}
           <div>
-            <label className="block text-xs font-bold text-[#9ca3af] uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
               Observações Especiais para este Item (Opcional)
             </label>
             <input
@@ -161,25 +161,25 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               value={itemNotes}
               onChange={(e) => setItemNotes(e.target.value)}
               placeholder="Ex: Embalagem para presente, bula lacrada..."
-              className="w-full px-3.5 py-2.5 bg-[#161616] border border-[#27272a] rounded-xl text-xs text-[#f3f4f6] placeholder-[#6b7280] focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#10b981] focus:outline-none"
             />
           </div>
         </div>
 
         {/* Modal Footer with Quantity and Add Button */}
-        <div className="p-5 border-t border-[#1f2937] bg-[#0d0d0d] flex items-center justify-between gap-4">
+        <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4">
           {/* Quantity Controls */}
-          <div className="flex items-center gap-3 bg-[#161616] px-3 py-1.5 rounded-2xl border border-[#27272a] shadow-md">
+          <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-slate-200 shadow-md">
             <button
               onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-              className="p-1 text-[#9ca3af] hover:text-white"
+              className="p-1 text-slate-500 hover:text-slate-800"
             >
               <Minus className="w-4 h-4" />
             </button>
-            <span className="font-bold text-sm text-[#f3f4f6] w-5 text-center">{quantity}</span>
+            <span className="font-bold text-sm text-slate-800 w-5 text-center">{quantity}</span>
             <button
               onClick={() => setQuantity(prev => prev + 1)}
-              className="p-1 text-[#9ca3af] hover:text-white"
+              className="p-1 text-slate-500 hover:text-slate-800"
             >
               <Plus className="w-4 h-4" />
             </button>

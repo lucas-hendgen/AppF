@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product, Coupon, Neighborhood } from '../types';
-import { COUPONS, NEIGHBORHOODS } from '../data/pharmacyData';
+import { api } from '../services/api';
 
 interface CartContextType {
   cart: CartItem[];
@@ -16,16 +16,16 @@ interface CartContextType {
   setSelectedNeighborhood: (bairro: string) => void;
   appliedCoupon: Coupon | null;
   couponDiscount: number;
-  applyCoupon: (code: string) => { success: boolean; message: string };
+  applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
   removeCoupon: () => void;
   finalTotal: number;
+  neighborhoods: Neighborhood[];
   isCartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
   isCheckoutOpen: boolean;
   openCheckout: () => void;
   closeCheckout: () => void;
-  lastItemAdded: { timestamp: number; quantity: number; name: string } | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -45,7 +45,56 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
-  const [lastItemAdded, setLastItemAdded] = useState<{ timestamp: number; quantity: number; name: string } | null>(null);
+
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
+
+  useEffect(() => {
+    api.fetchNeighborhoods().then(setNeighborhoods).catch(console.warn);
+  }, []);
+
+  // Sincronizar preços dos itens do carrinho com a base de dados
+  useEffect(() => {
+    if (cart.length === 0) return;
+    api.fetchProducts()
+      .then(products => {
+        setCart(prev => {
+          let changed = false;
+          const updated = prev.map(item => {
+            const dbProd = products.find(p => p.id === item.id);
+            if (dbProd) {
+              let latestPrice = 0;
+              if (dbProd.preco.includes('#')) {
+                const rawVars = dbProd.preco.split('#')[1].split('/');
+                const targetVar = item.variationText ? String(item.variationText).trim() : '';
+                let foundVarPrice = null;
+                for (const v of rawVars) {
+                  const [vName, vPrice] = v.split(':');
+                  if (vName.trim() === targetVar) {
+                    foundVarPrice = parseFloat(String(vPrice).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+                    break;
+                  }
+                }
+                if (foundVarPrice === null) {
+                  const firstPriceRaw = rawVars[0].split(':')[1];
+                  latestPrice = parseFloat(String(firstPriceRaw).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+                } else {
+                  latestPrice = foundVarPrice;
+                }
+              } else {
+                latestPrice = parseFloat(String(dbProd.preco).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+              }
+              if (item.preco !== latestPrice) {
+                changed = true;
+                return { ...item, preco: latestPrice };
+              }
+            }
+            return item;
+          });
+          return changed ? updated : prev;
+        });
+      })
+      .catch(console.warn);
+  }, [isCheckoutOpen]);
 
   // Save cart to local storage
   useEffect(() => {
@@ -75,13 +124,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const varKey = variationText ? `-${variationText.replace(/\s+/g, '_')}` : '';
     const notesKey = notes ? `-${notes.slice(0, 10).replace(/\s+/g, '_')}` : '';
     const itemKey = `${product.id}${varKey}${notesKey}`;
-
-    // Trigger item added animation event
-    setLastItemAdded({
-      timestamp: Date.now(),
-      quantity,
-      name: product.nome
-    });
 
     setCart(prev => {
       const existing = prev.find(item => item.itemKey === itemKey);
@@ -169,16 +211,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const finalTotal = Math.max(0, subtotal + deliveryFee - couponDiscount);
+  const finalTotal = cart.length === 0 ? 0 : Math.max(0, subtotal + deliveryFee - couponDiscount);
 
-  const applyCoupon = (code: string) => {
+  const applyCoupon = async (code: string) => {
     const cleanCode = code.trim().toUpperCase();
-    const found = COUPONS.find(c => c.codigo.toUpperCase() === cleanCode);
-    if (!found) {
-      return { success: false, message: 'Cupom não encontrado ou inválido.' };
+    try {
+      const found = await api.validateCoupon(cleanCode);
+      setAppliedCoupon(found);
+      return { success: true, message: `Cupom ${found.codigo} aplicado com sucesso!` };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Cupom não encontrado ou inválido.' };
     }
-    setAppliedCoupon(found);
-    return { success: true, message: `Cupom ${found.codigo} aplicado com sucesso!` };
   };
 
   const removeCoupon = () => {
@@ -204,13 +247,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         applyCoupon,
         removeCoupon,
         finalTotal,
+        neighborhoods,
         isCartOpen,
         openCart: () => setIsCartOpen(true),
         closeCart: () => setIsCartOpen(false),
         isCheckoutOpen,
         openCheckout: () => setIsCheckoutOpen(true),
-        closeCheckout: () => setIsCheckoutOpen(false),
-        lastItemAdded
+        closeCheckout: () => setIsCheckoutOpen(false)
       }}
     >
       {children}

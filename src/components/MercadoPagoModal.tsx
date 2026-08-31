@@ -33,7 +33,7 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'failed'>(order?.paymentStatus || 'pending');
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'failed' | 'refunded'>(order?.paymentStatus || 'pending');
   const [timeLeft, setTimeLeft] = useState<number>(1800); // 30 minutes in seconds
 
   useEffect(() => {
@@ -99,7 +99,7 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-[#111111] rounded-3xl shadow-2xl border border-[#1f2937] overflow-hidden flex flex-col max-h-[90vh] text-[#d1d5db]">
+      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] text-slate-655">
         
         {/* Header Mercado Pago */}
         <div className="p-5 bg-gradient-to-r from-[#005f88] to-[#003852] text-white flex items-center justify-between border-b border-[#009ee3]/30">
@@ -133,22 +133,22 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
           {/* PAID STATUS SUCCESS */}
           {paymentStatus === 'paid' ? (
             <div className="py-6 space-y-4 animate-in zoom-in-95 duration-300">
-              <div className="w-16 h-16 bg-emerald-950/80 text-emerald-400 border border-emerald-700/50 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full flex items-center justify-center mx-auto shadow-inner">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-[#f3f4f6]">Pagamento Aprovado com Sucesso!</h3>
-                <p className="text-xs text-[#9ca3af] mt-1">
-                  O Mercado Pago confirmou o recebimento de <strong className="text-[#f3f4f6]">R$ {order.total.toFixed(2).replace('.', ',')}</strong>.
+                <h3 className="text-xl font-bold text-slate-800">Pagamento Aprovado com Sucesso!</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  O Mercado Pago confirmou o recebimento de <strong className="text-slate-800">R$ {order.total.toFixed(2).replace('.', ',')}</strong>.
                 </p>
               </div>
-              <div className="p-4 bg-emerald-950/40 border border-emerald-800/40 rounded-2xl text-xs text-emerald-300 font-medium text-left space-y-1">
+              <div className="p-4 bg-emerald-50 border border-emerald-250 rounded-2xl text-xs text-emerald-800 font-medium text-left space-y-1">
                 <p>✓ Pedido enviado para a bancada de separação da farmácia.</p>
                 <p>✓ Um farmacêutico irá conferir os itens antes do envio.</p>
               </div>
               <button
                 onClick={onClose}
-                className="w-full py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-950/60 transition-all"
+                className="w-full py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all"
               >
                 Acompanhar Pedido
               </button>
@@ -156,13 +156,13 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
           ) : isPix ? (
             /* PIX PAYMENT FLOW */
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-2 text-xs text-[#9ca3af] font-medium">
-                <Clock className="w-4 h-4 text-amber-400" />
-                <span>Expira em: <strong className="text-[#f3f4f6] font-bold">{formatMinutes(timeLeft)}</strong></span>
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-500 font-medium">
+                <Clock className="w-4 h-4 text-amber-500" />
+                <span>Expira em: <strong className="text-slate-800 font-bold">{formatMinutes(timeLeft)}</strong></span>
               </div>
 
               {/* QR Code Container */}
-              <div className="relative p-4 bg-white rounded-2xl border border-[#27272a] inline-block mx-auto shadow-inner">
+              <div className="relative p-4 bg-white rounded-2xl border border-slate-200 inline-block mx-auto shadow-inner">
                 {pixData?.qrCodeBase64 ? (
                   <img
                     src={`data:image/png;base64,${pixData.qrCodeBase64}`}
@@ -186,11 +186,11 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
               </div>
 
               {/* Instructions */}
-              <div className="text-left bg-blue-950/40 border border-blue-800/40 p-3.5 rounded-2xl text-xs text-blue-200 space-y-1.5">
-                <p className="font-bold flex items-center gap-1.5 text-blue-300">
-                  <QrCode className="w-4 h-4 text-blue-400" /> Como pagar:
+              <div className="text-left bg-blue-50 border border-blue-200 p-3.5 rounded-2xl text-xs text-blue-800 space-y-1.5">
+                <p className="font-bold flex items-center gap-1.5 text-blue-900">
+                  <QrCode className="w-4 h-4 text-blue-600" /> Como pagar:
                 </p>
-                <ol className="list-decimal list-inside space-y-1 text-[11px] text-blue-200/90">
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-blue-800/90">
                   <li>Abra o aplicativo do seu banco de preferência</li>
                   <li>Escolha a opção <strong>Pagar com PIX / Ler QR Code</strong></li>
                   <li>Ou use o botão <strong>Copia e Cola</strong> abaixo</li>
@@ -204,7 +204,7 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
                     type="text"
                     readOnly
                     value={pixData?.qrCode || order.mercadoPagoQrCode || ''}
-                    className="w-full px-3 py-2 bg-[#161616] border border-[#27272a] rounded-xl text-xs font-mono text-[#9ca3af] truncate select-all focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-600 truncate select-all focus:outline-none"
                   />
                   <button
                     onClick={copyPixCode}
@@ -221,16 +221,16 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
               </div>
 
               {/* Sandbox Approval Simulation */}
-              <div className="pt-2 border-t border-[#1f2937] space-y-2">
+              <div className="pt-2 border-t border-slate-200 space-y-2">
                 <button
                   onClick={handleSimulateApproval}
                   disabled={checking}
-                  className="w-full py-2.5 bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/40 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <Sparkles className="w-4 h-4 text-amber-500" />
                   {checking ? 'Confirmando...' : 'Simular Confirmação de Pagamento (Ambiente de Teste)'}
                 </button>
-                <p className="text-[10px] text-[#9ca3af]">
+                <p className="text-[10px] text-slate-500">
                   O sistema verifica o status automaticamente a cada 4 segundos.
                 </p>
               </div>
@@ -238,12 +238,12 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
           ) : (
             /* CARD / PREFERENCE REDIRECT */
             <div className="space-y-4 py-2">
-              <div className="p-4 bg-blue-950/40 border border-blue-800/40 rounded-2xl text-left space-y-2">
-                <div className="flex items-center gap-2 text-blue-300 font-bold text-sm">
-                  <CreditCard className="w-5 h-5 text-blue-400" />
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-left space-y-2">
+                <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
+                  <CreditCard className="w-5 h-5 text-blue-600" />
                   <span>Checkout Mercado Pago</span>
                 </div>
-                <p className="text-xs text-blue-200/90 leading-relaxed">
+                <p className="text-xs text-blue-800/90 leading-relaxed">
                   Pague com total segurança utilizando cartão de crédito em até 6x, cartão de débito virtual da Caixa ou saldo Mercado Pago.
                 </p>
               </div>
@@ -261,9 +261,9 @@ export const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
 
               <button
                 onClick={handleSimulateApproval}
-                className="w-full py-2.5 bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/40 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-4 h-4 text-amber-400" />
+                <Sparkles className="w-4 h-4 text-amber-500" />
                 Simular Aprovação Imediata
               </button>
             </div>

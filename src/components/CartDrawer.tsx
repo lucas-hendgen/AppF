@@ -14,7 +14,7 @@ export const CartDrawer: React.FC = () => {
       <div className="absolute inset-0" onClick={closeCart} />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-[#111111] border-l border-[#1f2937] shadow-2xl flex flex-col text-[#d1d5db]">
+        <div className="w-screen max-w-md bg-white border-l border-slate-100 shadow-2xl flex flex-col text-slate-600">
           
           {/* Drawer Header */}
           <div className="p-5 bg-gradient-to-r from-[#064e3b] to-[#047857] text-white flex items-center justify-between border-b border-[#065f46]/30">
@@ -46,10 +46,10 @@ export const CartDrawer: React.FC = () => {
 
           {/* Member Banner Notification */}
           {!isAuthenticated ? (
-            <div className="p-3.5 bg-amber-950/40 border-b border-amber-800/40 flex flex-col gap-2">
+            <div className="p-3.5 bg-amber-50 border-b border-amber-200 flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                <p className="text-xs text-amber-200 font-medium">
+                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                <p className="text-xs text-amber-800 font-medium">
                   Login obrigatório para compras: crie sua conta ou entre para finalizar seu pedido!
                 </p>
               </div>
@@ -62,21 +62,21 @@ export const CartDrawer: React.FC = () => {
                 </button>
                 <button
                   onClick={() => openAuthModal('register', 'Crie sua conta em 1 minuto para finalizar sua compra.')}
-                  className="flex-1 text-xs font-bold text-[#d1d5db] bg-[#161616] hover:bg-[#222222] py-1.5 px-3 rounded-lg border border-[#27272a] text-center transition-all"
+                  className="flex-1 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 py-1.5 px-3 rounded-lg border border-slate-200/80 text-center transition-all"
                 >
                   Criar Conta Grátis
                 </button>
               </div>
             </div>
           ) : (
-            <div className="p-3 bg-emerald-950/30 border-b border-emerald-800/30 flex items-center justify-between gap-2">
+            <div className="p-3 bg-emerald-50/60 border-b border-emerald-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-                <p className="text-xs text-emerald-200 font-medium">
-                  Conectado como <strong className="text-white">{user?.name}</strong> • {user?.membershipTier}
+                <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+                <p className="text-xs text-emerald-700 font-medium">
+                  Conectado como <strong className="text-slate-800">{user?.name}</strong> • {user?.membershipTier}
                 </p>
               </div>
-              <span className="text-[11px] font-bold text-amber-400">
+              <span className="text-[11px] font-bold text-amber-600">
                 {user?.loyaltyPoints || 0} pts
               </span>
             </div>
@@ -88,26 +88,26 @@ export const CartDrawer: React.FC = () => {
               cart.map((item) => (
                 <div
                   key={item.itemKey}
-                  className="p-3.5 bg-[#161616] border border-[#1f2937] rounded-2xl flex items-center gap-3 hover:border-emerald-500/40 transition-colors"
+                  className="p-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center gap-3 hover:border-emerald-300 transition-colors"
                 >
                   <img
                     src={item.imagem}
                     alt={item.nome}
-                    className="w-14 h-14 object-cover rounded-xl border border-[#27272a] bg-[#111111]"
+                    className="w-14 h-14 object-cover rounded-xl border border-slate-200/50 bg-white"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
-                      <h4 className="font-bold text-xs text-[#f3f4f6] truncate">{item.nome}</h4>
+                      <h4 className="font-bold text-xs text-slate-800 truncate">{item.nome}</h4>
                       <button
                         onClick={() => removeFromCart(item.itemKey)}
-                        className="text-[#6b7280] hover:text-red-400 p-1"
+                        className="text-slate-400 hover:text-red-600 p-1"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <span className="text-[10px] font-mono text-[#6b7280] block">{item.sku}</span>
+                    <span className="text-[10px] font-mono text-slate-400 block">{item.sku}</span>
                     {item.variationText && (
-                      <span className="text-[10px] text-emerald-400 font-medium block truncate">
+                      <span className="text-[10px] text-emerald-600 font-medium block truncate">
                         ✓ {item.variationText}
                       </span>
                     )}
@@ -115,17 +115,17 @@ export const CartDrawer: React.FC = () => {
                       <span className="text-xs font-bold text-[#10b981]">
                         R$ {(item.preco * item.quantity).toFixed(2).replace('.', ',')}
                       </span>
-                      <div className="flex items-center gap-2 bg-[#111111] px-2 py-0.5 rounded-lg border border-[#27272a] shadow-sm">
+                      <div className="flex items-center gap-2 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-sm">
                         <button
                           onClick={() => updateQuantity(item.itemKey, -1)}
-                          className="text-[#9ca3af] hover:text-white"
+                          className="text-slate-400 hover:text-slate-700"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-xs font-bold w-4 text-center text-[#f3f4f6]">{item.quantity}</span>
+                        <span className="text-xs font-bold w-4 text-center text-slate-800">{item.quantity}</span>
                         <button
                           onClick={() => updateQuantity(item.itemKey, 1)}
-                          className="text-[#9ca3af] hover:text-white"
+                          className="text-slate-400 hover:text-slate-700"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -135,22 +135,22 @@ export const CartDrawer: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-center py-16 text-[#6b7280] space-y-2">
-                <ShoppingBag className="w-12 h-12 mx-auto text-[#374151]" />
-                <p className="text-sm font-semibold text-[#9ca3af]">Seu carrinho está vazio</p>
-                <p className="text-xs text-[#6b7280]">Escolha os medicamentos e itens desejados no catálogo.</p>
+              <div className="text-center py-16 text-slate-400 space-y-2">
+                <ShoppingBag className="w-12 h-12 mx-auto text-slate-200" />
+                <p className="text-sm font-semibold text-slate-500">Seu carrinho está vazio</p>
+                <p className="text-xs text-slate-400">Escolha os medicamentos e itens desejados no catálogo.</p>
               </div>
             )}
           </div>
 
           {/* Drawer Footer */}
           {cart.length > 0 && (
-            <div className="p-5 border-t border-[#1f2937] bg-[#0d0d0d] space-y-3">
+            <div className="p-5 border-t border-slate-100 bg-slate-50 space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#9ca3af] font-medium">Subtotal dos Itens</span>
-                <span className="font-bold text-[#f3f4f6]">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+                <span className="text-slate-500 font-medium">Subtotal dos Itens</span>
+                <span className="font-bold text-slate-800">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
               </div>
-              <p className="text-[11px] text-[#6b7280]">
+              <p className="text-[11px] text-slate-400">
                 * A taxa de entrega será calculada no próximo passo de acordo com o seu bairro.
               </p>
 
@@ -163,7 +163,7 @@ export const CartDrawer: React.FC = () => {
                   closeCart();
                   openCheckout();
                 }}
-                className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-950/60 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2"
               >
                 <span>Avançar para o Checkout</span>
                 <ArrowRight className="w-4 h-4" />

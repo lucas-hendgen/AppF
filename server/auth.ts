@@ -343,10 +343,16 @@ export const authController = {
 
       // Generate a 6-digit recovery code
       const recoveryCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const recoveryCodeExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes expiration
+
+      // Save code to database
+      db.updateUser(user.id, { recoveryCode, recoveryCodeExpires });
+
+      // Log in server console for testing/development (no leak in response)
+      console.log(`\n🔑 [RECUPERAÇÃO DE SENHA] Código gerado para ${cleanEmail}: ${recoveryCode}\n`);
 
       res.json({
         message: `Instruções e código de recuperação enviados com sucesso para ${cleanEmail}!`,
-        recoveryCode, // Sent for demonstration / instant password reset
         email: cleanEmail
       });
     } catch (err) {
@@ -357,9 +363,9 @@ export const authController = {
 
   async resetPassword(req: Request, res: Response): Promise<void> {
     try {
-      const { email, newPassword } = req.body;
-      if (!email || !newPassword) {
-        res.status(400).json({ error: 'E-mail e nova senha são obrigatórios.' });
+      const { email, newPassword, code } = req.body;
+      if (!email || !newPassword || !code) {
+        res.status(400).json({ error: 'E-mail, nova senha e código de verificação são obrigatórios.' });
         return;
       }
 
@@ -376,10 +382,27 @@ export const authController = {
         return;
       }
 
+      // Verify recovery code
+      if (!user.recoveryCode || user.recoveryCode !== code) {
+        res.status(400).json({ error: 'Código de verificação incorreto.' });
+        return;
+      }
+
+      // Verify expiration
+      if (user.recoveryCodeExpires && new Date(user.recoveryCodeExpires).getTime() < Date.now()) {
+        res.status(400).json({ error: 'O código de verificação expirou. Solicite um novo.' });
+        return;
+      }
+
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(newPassword, salt);
 
-      const updated = db.updateUser(user.id, { passwordHash });
+      // Save new password and clean recovery fields
+      const updated = db.updateUser(user.id, {
+        passwordHash,
+        recoveryCode: undefined,
+        recoveryCodeExpires: undefined
+      });
       const token = generateToken(updated!);
 
       res.json({

@@ -117,6 +117,7 @@ export interface Order {
   status: 'recebido' | 'preparando' | 'em_rota' | 'concluido' | 'cancelado';
   changeAmount?: string;
   notes?: string;
+  scheduled?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -126,4 +127,20 @@ export interface MercadoPagoConfig {
   publicKey: string;
   sandboxMode: boolean;
   supportedMethods: string[];
+}
+
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  buttonLink: string;
+  imageUrl?: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+  buttonColor: string;
+  badgeText?: string;
+  iconName?: string;
+  productIds?: number[];
 }
