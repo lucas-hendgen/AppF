@@ -8,7 +8,7 @@
     "passwordHash": "$2b$10$t/m55nxLST6U2m7JTPV4fOTzcO.8L.GUzN1o5nyxqyVbxifakE7wK",
     "role": "admin",
     "membershipTier": "Gold Fidelidade",
-    "loyaltyPoints": 2403,
+    "loyaltyPoints": 2552,
     "healthNotes": "Conta Administrativa MasterFarma",
     "addresses": [
       {
@@ -23,7 +23,7 @@
       }
     ],
     "createdAt": "2026-08-28T00:59:07.135Z",
-    "updatedAt": "2026-08-29T23:21:21.128Z"
+    "updatedAt": "2026-08-31T19:32:44.593Z"
   },
   {
     "id": "usr_member_01",

@@ -1,5 +1,108 @@
 [
   {
+    "id": "FSP-7193",
+    "userId": "usr_admin_01",
+    "customerName": "Farmacêutico Responsável",
+    "customerPhone": "(47) 99999-8888",
+    "deliveryType": "delivery",
+    "address": {
+      "id": "addr_01",
+      "street": "Av. Nereu Ramos",
+      "number": "897",
+      "complement": "",
+      "neighborhood": "centro",
+      "city": "Itapema",
+      "state": "SC",
+      "cep": "88220-000"
+    },
+    "items": [
+      {
+        "id": 4,
+        "name": "Soro Fisiológico 0,9% 500ml",
+        "sku": "MED004",
+        "price": 12.9,
+        "quantity": 1,
+        "variations": "",
+        "notes": ""
+      }
+    ],
+    "subtotal": 12.9,
+    "deliveryFee": 0,
+    "discount": 0,
+    "total": 12.9,
+    "paymentMethod": "mercadopago_pix",
+    "paymentStatus": "pending",
+    "status": "recebido",
+    "notes": "",
+    "scheduled": false,
+    "createdAt": "2026-08-31T19:32:44.586Z",
+    "updatedAt": "2026-08-31T19:32:44.611Z",
+    "mercadoPagoPaymentId": "pay_mp_10076634",
+    "mercadoPagoQrCode": "00020126580014br.gov.bcb.pix0136i5b2725hl252040000530398654012.905802BR5922FARMACIA SUPER POPULAR6007ITAPEMA62070503FSP71936304"
+  },
+  {
+    "id": "FSP-8190",
+    "userId": "usr_admin_01",
+    "customerName": "Farmacêutico Responsável",
+    "customerPhone": "(47) 99999-8888",
+    "deliveryType": "pickup",
+    "items": [
+      {
+        "id": 4,
+        "name": "Soro Fisiológico 0,9% 500ml",
+        "sku": "MED004",
+        "price": 12.9,
+        "quantity": 1,
+        "variations": "",
+        "notes": ""
+      }
+    ],
+    "subtotal": 12.9,
+    "deliveryFee": 0,
+    "discount": 0,
+    "total": 12.9,
+    "paymentMethod": "mercadopago_pix",
+    "paymentStatus": "pending",
+    "status": "recebido",
+    "notes": "",
+    "scheduled": false,
+    "createdAt": "2026-08-31T19:31:11.157Z",
+    "updatedAt": "2026-08-31T19:31:11.186Z",
+    "mercadoPagoPaymentId": "pay_mp_77967567",
+    "mercadoPagoQrCode": "00020126580014br.gov.bcb.pix0136e75l9321cps52040000530398654012.905802BR5922FARMACIA SUPER POPULAR6007ITAPEMA62070503FSP81906304"
+  },
+  {
+    "id": "FSP-9791",
+    "userId": "usr_admin_01",
+    "customerName": "Farmacêutico Responsável",
+    "customerPhone": "(47) 99999-8888",
+    "deliveryType": "pickup",
+    "items": [
+      {
+        "id": 19,
+        "name": "Ômega 3 Puro 1000mg EPA/DHA (120 cáps)",
+        "sku": "VIT003",
+        "price": 49.9,
+        "quantity": 1,
+        "variations": "",
+        "notes": ""
+      }
+    ],
+    "subtotal": 49.9,
+    "deliveryFee": 0,
+    "discount": 0,
+    "total": 49.9,
+    "paymentMethod": "mercadopago_pix",
+    "paymentStatus": "pending",
+    "status": "recebido",
+    "notes": "",
+    "scheduled": false,
+    "createdAt": "2026-08-31T19:29:28.838Z",
+    "updatedAt": "2026-08-31T19:29:28.865Z",
+    "mercadoPagoPaymentId": "pay_mp_80305512",
+    "mercadoPagoQrCode": "00020126580014br.gov.bcb.pix0136gte46dg1j552040000530398654049.905802BR5922FARMACIA SUPER POPULAR6007ITAPEMA62070503FSP97916304"
+  },
+  {
     "id": "FSP-4512",
     "userId": "usr_admin_01",
     "customerName": "Farmacêutico Responsável",
