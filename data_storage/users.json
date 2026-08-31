@@ -1,0 +1,170 @@
+[
+  {
+    "id": "usr_admin_01",
+    "name": "Farmacêutico Responsável",
+    "email": "admin@farmaciasuperpopular.com.br",
+    "cpf": "000.000.000-00",
+    "phone": "(47) 99999-8888",
+    "passwordHash": "$2b$10$t/m55nxLST6U2m7JTPV4fOTzcO.8L.GUzN1o5nyxqyVbxifakE7wK",
+    "role": "admin",
+    "membershipTier": "Gold Fidelidade",
+    "loyaltyPoints": 2403,
+    "healthNotes": "Conta Administrativa MasterFarma",
+    "addresses": [
+      {
+        "id": "addr_01",
+        "street": "Av. Nereu Ramos",
+        "number": "897",
+        "neighborhood": "Centro",
+        "city": "Itapema",
+        "state": "SC",
+        "cep": "88220-000",
+        "isDefault": true
+      }
+    ],
+    "createdAt": "2026-08-28T00:59:07.135Z",
+    "updatedAt": "2026-08-29T23:21:21.128Z"
+  },
+  {
+    "id": "usr_member_01",
+    "name": "Maria Helena Silva",
+    "email": "maria.helena@email.com",
+    "cpf": "123.456.789-00",
+    "phone": "(47) 98877-6655",
+    "passwordHash": "$2b$10$t/m55nxLST6U2m7JTPV4fOAcyiUUrToEtK1b7C6TE1RwDaXANlBzO",
+    "role": "member",
+    "membershipTier": "Popular VIP",
+    "loyaltyPoints": 340,
+    "healthNotes": "Alérgica a Dipirona e Ácido Acetilsalicílico (AAS). Hipertensa.",
+    "addresses": [
+      {
+        "id": "addr_02",
+        "street": "Rua 230",
+        "number": "450",
+        "complement": "Apto 302",
+        "neighborhood": "Meia Praia",
+        "city": "Itapema",
+        "state": "SC",
+        "cep": "88220-000",
+        "isDefault": true
+      }
+    ],
+    "createdAt": "2026-08-28T00:59:07.136Z",
+    "updatedAt": "2026-08-28T00:59:07.136Z"
+  },
+  {
+    "id": "usr_1787967742417_z3381",
+    "name": "Test User",
+    "email": "testuser@example.com",
+    "cpf": "123.456.789-09",
+    "phone": "(47) 99999-9999",
+    "passwordHash": "$2b$10$0rRwVQywNCEqJ6IEHxxYYenTQfFoWvcqhnK2zg9VtiE8BLxDWmLo6",
+    "role": "member",
+    "membershipTier": "Standard",
+    "loyaltyPoints": 50,
+    "healthNotes": "",
+    "addresses": [
+      {
+        "id": "addr_1787967742417",
+        "street": "Rua 230",
+        "number": "450",
+        "complement": "",
+        "neighborhood": "Meia Praia",
+        "city": "Itapema",
+        "state": "SC",
+        "cep": "",
+        "isDefault": true
+      }
+    ],
+    "createdAt": "2026-08-29T01:42:22.417Z",
+    "updatedAt": "2026-08-29T01:42:22.418Z"
+  },
+  {
+    "id": "usr_1787971284916_8x9m0",
+    "name": "Test Member",
+    "email": "testmember_unique_99@example.com",
+    "cpf": "111.222.333-96",
+    "phone": "(47) 99999-9999",
+    "passwordHash": "$2b$10$8Ney1hc5bbXU926NbNDyMOgU5oWtWDeVquenFQsW/a.f4uu3o3Jma",
+    "role": "member",
+    "membershipTier": "Standard",
+    "loyaltyPoints": 50,
+    "healthNotes": "",
+    "addresses": [],
+    "createdAt": "2026-08-29T02:41:24.916Z",
+    "updatedAt": "2026-08-29T02:41:24.916Z"
+  },
+  {
+    "id": "usr_google_1788033291752_78ub",
+    "name": "Cliente Google",
+    "email": "novo.membro@gmail.com",
+    "cpf": "",
+    "phone": "",
+    "passwordHash": "$2b$10$NY3.jubBqOSmUxJi5i9g8eYgFuDJYhHqViH5LXvyxWRJKSwR1TDZ.",
+    "role": "member",
+    "membershipTier": "Standard",
+    "loyaltyPoints": 50,
+    "healthNotes": "",
+    "addresses": [],
+    "createdAt": "2026-08-29T19:54:51.752Z",
+    "updatedAt": "2026-08-29T19:54:51.752Z"
+  },
+  {
+    "id": "usr_1788033415428_6yh1k",
+    "name": "Leandro da Conceiçao Carvalho",
+    "email": "leandrojacksoncarvalhooficial2@gmail.com",
+    "cpf": "071.933.925-14",
+    "phone": "(49) 98889-7524",
+    "passwordHash": "$2b$10$2SGb4UINWnQa2h7W5QLG8u4rNXCmRLdmsw0GrP2rW7jgEU21Hnw/2",
+    "role": "member",
+    "membershipTier": "Standard",
+    "loyaltyPoints": 116,
+    "healthNotes": "",
+    "addresses": [
+      {
+        "id": "addr_1788033415428",
+        "street": "406F",
+        "number": "54",
+        "complement": "",
+        "neighborhood": "Morretes",
+        "city": "Itapema",
+        "state": "SC",
+        "cep": "",
+        "isDefault": true
+      }
+    ],
+    "createdAt": "2026-08-29T19:56:55.428Z",
+    "updatedAt": "2026-08-31T18:13:18.105Z",
+    "recoveryCode": "566349",
+    "recoveryCodeExpires": "2026-08-31T18:28:18.104Z"
+  },
+  {
+    "id": "usr_1788199813254_hu2pn",
+    "name": "Cliente Teste Producao",
+    "email": "teste_1788199813136@farmacia.com",
+    "cpf": "",
+    "phone": "(47) 98888-7777",
+    "passwordHash": "$2b$10$Fwizv4nKcWKJviydozXXieZhQYZjKMftwtHGIYEq57cx3NGABkpoi",
+    "role": "member",
+    "membershipTier": "Standard",
+    "loyaltyPoints": 50,
+    "healthNotes": "",
+    "addresses": [
+      {
+        "id": "addr_1788199813254",
+        "street": "Rua 230",
+        "number": "120",
+        "complement": "",
+        "neighborhood": "Meia Praia",
+        "city": "Itapema",
+        "state": "SC",
+        "cep": "",
+        "isDefault": true
+      }
+    ],
+    "createdAt": "2026-08-31T18:10:13.254Z",
+    "updatedAt": "2026-08-31T18:10:13.397Z",
+    "recoveryCode": "994481",
+    "recoveryCodeExpires": "2026-08-31T18:25:13.397Z"
+  }
+]

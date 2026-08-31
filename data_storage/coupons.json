@@ -1,0 +1,20 @@
+[
+  {
+    "codigo": "POPULAR10",
+    "tipo_desconto": "produtos",
+    "valor_desconto": "10%",
+    "descricao": "10% de desconto em todos os produtos"
+  },
+  {
+    "codigo": "FRETEGRATIS",
+    "tipo_desconto": "frete",
+    "valor_desconto": "100%",
+    "descricao": "Frete grátis para toda Itapema"
+  },
+  {
+    "codigo": "BEMVINDO5",
+    "tipo_desconto": "total",
+    "valor_desconto": "5.00",
+    "descricao": "R$ 5,00 de desconto no valor total"
+  }
+]

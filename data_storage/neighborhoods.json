@@ -1,0 +1,34 @@
+[
+  {
+    "bairro": "centro",
+    "taxa": 0
+  },
+  {
+    "bairro": "meia praia",
+    "taxa": 5
+  },
+  {
+    "bairro": "morretes",
+    "taxa": 6
+  },
+  {
+    "bairro": "canto da praia",
+    "taxa": 0
+  },
+  {
+    "bairro": "tabuleiro",
+    "taxa": 6.5
+  },
+  {
+    "bairro": "várzea",
+    "taxa": 8
+  },
+  {
+    "bairro": "alto são bento",
+    "taxa": 8.5
+  },
+  {
+    "bairro": "ilhotas",
+    "taxa": 10
+  }
+]
