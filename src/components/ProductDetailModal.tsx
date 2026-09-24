@@ -79,18 +79,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] text-slate-600">
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] text-slate-700">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-slate-700 bg-slate-50/80 hover:bg-slate-100 backdrop-blur border border-slate-200/60 rounded-full shadow-lg transition-all"
+          className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-slate-700 bg-white/80 hover:bg-slate-100 backdrop-blur border border-slate-200 rounded-full shadow-md transition-all"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Product Image Banner */}
-        <div className="relative w-full h-64 bg-slate-50/50 flex items-center justify-center p-6 border-b border-slate-100">
+        <div className="relative w-full h-64 bg-slate-50 flex items-center justify-center p-6 border-b border-slate-100">
           <img
             src={product.imagem}
             alt={product.nome}
@@ -99,7 +99,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               (e.target as HTMLElement).style.opacity = '0.3';
             }}
           />
-          <span className="absolute bottom-3 left-4 text-xs font-mono font-bold px-2.5 py-1 bg-slate-200/70 text-slate-500 border border-slate-300/30 rounded-lg backdrop-blur-sm">
+          <span className="absolute bottom-3 left-4 text-xs font-mono font-bold px-2.5 py-1 bg-slate-200/70 text-slate-600 border border-slate-300/40 rounded-lg backdrop-blur-sm">
             SKU: {product.sku}
           </span>
         </div>
@@ -107,13 +107,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
         {/* Product Details Content */}
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
           <div>
-            <span className="text-xs uppercase font-extrabold text-[#10b981] tracking-wider block mb-1">
+            <span className="text-xs uppercase font-extrabold text-blue-600 tracking-wider block mb-1">
               {product.categoria}
             </span>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800 leading-tight">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-tight">
               {product.nome}
             </h2>
-            <p className="text-xs text-slate-500 leading-relaxed mt-2">
+            <p className="text-xs text-slate-550 leading-relaxed mt-2">
               {product.descricao}
             </p>
           </div>
@@ -142,12 +142,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                     onClick={() => setSelectedVariation(vo.raw)}
                     className={`p-3 rounded-xl border text-left text-xs font-semibold transition-all ${
                       selectedVariation === vo.raw
-                        ? 'border-[#10b981] bg-emerald-50 text-emerald-700 shadow-md'
+                        ? 'border-blue-600 bg-blue-50 text-blue-800 shadow-sm'
                         : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
                     }`}
                   >
                     <p className="font-bold">{vo.name}</p>
-                    <p className="text-xs text-emerald-600">R$ {vo.price.toFixed(2).replace('.', ',')}</p>
+                    <p className="text-xs text-blue-600">R$ {vo.price.toFixed(2).replace('.', ',')}</p>
                   </button>
                 ))}
               </div>
@@ -164,15 +164,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               value={itemNotes}
               onChange={(e) => setItemNotes(e.target.value)}
               placeholder="Ex: Embalagem para presente, bula lacrada..."
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
             />
           </div>
         </div>
 
         {/* Modal Footer with Quantity and Add Button */}
-        <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4">
+        <div className="p-5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-4">
           {/* Quantity Controls */}
-          <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-slate-200 shadow-md">
+          <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-slate-200 shadow-sm">
             <button
               onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
               className="p-1 text-slate-500 hover:text-slate-800"
@@ -193,8 +193,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
             onClick={handleAddToCart}
             className={`flex-1 py-3.5 rounded-2xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 ${
               isAdded
-                ? 'bg-emerald-600 text-white'
-                : 'bg-[#10b981] hover:bg-[#059669] text-white shadow-emerald-950/60'
+                ? 'bg-blue-800 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-950/40'
             }`}
           >
             {isAdded ? (

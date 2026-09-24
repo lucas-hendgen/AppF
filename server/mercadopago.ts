@@ -61,7 +61,7 @@ export const mercadoPagoController = {
       }
 
       // Busca o pedido no banco de dados para evitar adulteração de preço (Price Tampering)
-      const order = db.getOrderById(orderId);
+      const order = await db.getOrderById(orderId);
       if (!order) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
         return;
@@ -131,7 +131,7 @@ export const mercadoPagoController = {
           const data: any = await response.json();
 
           // Atualizar pedido no banco com ID da preferência
-          db.updateOrder(orderId, {
+          await db.updateOrder(orderId, {
             mercadoPagoPreferenceId: data.id,
             paymentMethod: 'mercadopago_card'
           });
@@ -151,7 +151,7 @@ export const mercadoPagoController = {
       // Sandbox / Modo de Demonstração Seguro
       const mockPreferenceId = `pref_mock_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       
-      db.updateOrder(orderId, {
+      await db.updateOrder(orderId, {
         mercadoPagoPreferenceId: mockPreferenceId,
         paymentMethod: 'mercadopago_card'
       });
@@ -180,7 +180,7 @@ export const mercadoPagoController = {
       }
 
       // Busca o pedido no banco de dados para evitar adulteração de preço (Price Tampering)
-      const order = db.getOrderById(orderId);
+      const order = await db.getOrderById(orderId);
       if (!order) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
         return;
@@ -230,7 +230,7 @@ export const mercadoPagoController = {
             const data: any = await response.json();
             const pixInfo = data.point_of_interaction?.transaction_data;
 
-            db.updateOrder(orderId, {
+            await db.updateOrder(orderId, {
               mercadoPagoPaymentId: String(data.id),
               mercadoPagoQrCode: pixInfo?.qr_code,
               mercadoPagoQrCodeBase64: pixInfo?.qr_code_base64,
@@ -259,7 +259,7 @@ export const mercadoPagoController = {
       const cleanOrder = orderId.replace(/[^a-zA-Z0-9]/g, '');
       const fakePixPayload = `00020126580014br.gov.bcb.pix0136${Math.random().toString(36).substring(2, 15)}520400005303986540${amount.toFixed(2)}5802BR5922FARMACIA SUPER POPULAR6007ITAPEMA62070503${cleanOrder}6304`;
 
-      db.updateOrder(orderId, {
+      await db.updateOrder(orderId, {
         mercadoPagoPaymentId: simulatedPaymentId,
         mercadoPagoQrCode: fakePixPayload,
         paymentMethod: 'mercadopago_pix',
@@ -285,7 +285,7 @@ export const mercadoPagoController = {
   async checkPaymentStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { orderId } = req.params;
-      const order = db.getOrderById(orderId);
+      const order = await db.getOrderById(orderId);
 
       if (!order) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
@@ -313,7 +313,7 @@ export const mercadoPagoController = {
             const newPaymentStatus = data.status === 'approved' ? 'paid' : data.status === 'rejected' ? 'failed' : 'pending';
             
             if (order.paymentStatus !== newPaymentStatus) {
-              db.updateOrder(order.id, {
+              await db.updateOrder(order.id, {
                 paymentStatus: newPaymentStatus,
                 status: newPaymentStatus === 'paid' && order.status === 'recebido' ? 'preparando' : order.status
               });
@@ -341,7 +341,7 @@ export const mercadoPagoController = {
   async simulatePaymentApproval(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { orderId } = req.body;
-      const order = db.getOrderById(orderId);
+      const order = await db.getOrderById(orderId);
 
       if (!order) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
@@ -354,7 +354,7 @@ export const mercadoPagoController = {
         return;
       }
 
-      const updated = db.updateOrder(orderId, {
+      const updated = await db.updateOrder(orderId, {
         paymentStatus: 'paid',
         status: order.status === 'recebido' ? 'preparando' : order.status
       });
@@ -394,7 +394,7 @@ export const mercadoPagoController = {
 
             if (orderId) {
               const isApproved = paymentData.status === 'approved';
-              db.updateOrder(orderId, {
+              await db.updateOrder(orderId, {
                 mercadoPagoPaymentId: String(paymentData.id),
                 paymentStatus: isApproved ? 'paid' : paymentData.status === 'rejected' ? 'failed' : 'pending',
                 status: isApproved ? 'preparando' : 'recebido'

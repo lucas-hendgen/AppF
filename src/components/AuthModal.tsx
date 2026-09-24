@@ -40,6 +40,7 @@ export const AuthModal: React.FC = () => {
   const [regPassword, setRegPassword] = useState('');
   const [regStreet, setRegStreet] = useState('');
   const [regNumber, setRegNumber] = useState('');
+  const [regApartmentNumber, setRegApartmentNumber] = useState('');
   const [regNeighborhood, setRegNeighborhood] = useState('Centro');
   const [regHealthNotes, setRegHealthNotes] = useState('');
 
@@ -115,6 +116,7 @@ export const AuthModal: React.FC = () => {
         address: regStreet ? {
           street: regStreet.trim(),
           number: regNumber.trim() || 'S/N',
+          apartmentNumber: regApartmentNumber.trim() || undefined,
           neighborhood: regNeighborhood,
           city: 'Itapema',
           state: 'SC'
@@ -179,11 +181,11 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] text-slate-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 font-sans">
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] text-slate-700">
         
         {/* Header with gradient */}
-        <div className="p-6 bg-gradient-to-br from-[#064e3b] to-[#047857] text-white relative border-b border-[#065f46]/30">
+        <div className="p-6 bg-gradient-to-br from-[#0a192f] via-[#172554] to-[#1e3a8a] text-white relative border-b border-blue-900/30">
           <button
             onClick={closeAuthModal}
             className="absolute top-4 right-4 p-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all"
@@ -193,7 +195,7 @@ export const AuthModal: React.FC = () => {
           </button>
           
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-white/10 text-emerald-300 rounded-2xl border border-emerald-400/20 shadow-inner">
+            <div className="p-2.5 bg-white/10 text-sky-300 rounded-2xl border border-blue-400/20 shadow-inner">
               {activeTab === 'forgot_password' ? (
                 <KeyRound className="w-7 h-7" />
               ) : (
@@ -204,7 +206,7 @@ export const AuthModal: React.FC = () => {
               <h2 className="text-xl font-bold text-white">
                 {activeTab === 'forgot_password' ? 'Recuperação de Senha' : 'Portal de Membros & Saúde'}
               </h2>
-              <p className="text-xs text-emerald-100">
+              <p className="text-xs text-blue-100">
                 {activeTab === 'forgot_password' 
                   ? 'Redefina sua senha com seu código de segurança'
                   : 'Acesse seus pedidos, descontos do clube e histórico farmacêutico'}
@@ -224,7 +226,7 @@ export const AuthModal: React.FC = () => {
                 }}
                 className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all ${
                   activeTab === 'login'
-                    ? 'bg-[#10b981] text-white shadow-md'
+                    ? 'bg-blue-600 text-white shadow-md'
                     : 'text-white/80 hover:text-white'
                 }`}
               >
@@ -239,7 +241,7 @@ export const AuthModal: React.FC = () => {
                 }}
                 className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all ${
                   activeTab === 'register'
-                    ? 'bg-[#10b981] text-white shadow-md'
+                    ? 'bg-blue-600 text-white shadow-md'
                     : 'text-white/80 hover:text-white'
                 }`}
               >
@@ -255,11 +257,11 @@ export const AuthModal: React.FC = () => {
                   setErrorMsg('');
                   setSuccessMsg('');
                 }}
-                className="inline-flex items-center gap-1.5 text-xs text-emerald-100 hover:text-white bg-black/20 hover:bg-black/30 px-3 py-1.5 rounded-lg transition-all font-medium"
+                className="inline-flex items-center gap-1.5 text-xs text-blue-100 hover:text-white bg-black/20 hover:bg-black/30 px-3 py-1.5 rounded-lg transition-all font-medium"
               >
                 <ArrowLeft className="w-3.5 h-3.5" /> Voltar para o Login
               </button>
-              <span className="text-xs text-emerald-200 font-medium">Recuperação Segura</span>
+              <span className="text-xs text-blue-200 font-medium">Recuperação Segura</span>
             </div>
           )}
         </div>
@@ -269,7 +271,7 @@ export const AuthModal: React.FC = () => {
           
           {/* Context Reason Banner (e.g. required for purchase) */}
           {authModalReason && (
-            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs font-semibold flex items-center gap-2.5 shadow-md">
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs font-semibold flex items-center gap-2.5 shadow-xs">
               <AlertCircle className="w-5 h-5 shrink-0 text-amber-600" />
               <span>{authModalReason}</span>
             </div>
@@ -283,15 +285,13 @@ export const AuthModal: React.FC = () => {
           )}
 
           {successMsg && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
-              <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
+            <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl text-blue-800 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-blue-600" />
               <span>{successMsg}</span>
             </div>
           )}
 
-          {/* ======================================================== */}
           {/* TAB 1: LOGIN */}
-          {/* ======================================================== */}
           {activeTab === 'login' && (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
@@ -306,7 +306,7 @@ export const AuthModal: React.FC = () => {
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     placeholder="ex: seu.email@exemplo.com ou CPF"
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981] transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                   />
                 </div>
               </div>
@@ -326,7 +326,7 @@ export const AuthModal: React.FC = () => {
                       setErrorMsg('');
                       setSuccessMsg('');
                     }}
-                    className="text-xs text-[#10b981] hover:text-[#059669] font-semibold hover:underline"
+                    className="text-xs text-blue-600 hover:text-blue-700 font-semibold hover:underline"
                   >
                     Esqueceu a senha?
                   </button>
@@ -339,7 +339,7 @@ export const AuthModal: React.FC = () => {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Sua senha secreta"
-                    className="w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981] transition-all"
+                    className="w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                   />
                   <button
                     type="button"
@@ -356,7 +356,7 @@ export const AuthModal: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-950/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -370,9 +370,7 @@ export const AuthModal: React.FC = () => {
             </form>
           )}
 
-          {/* ======================================================== */}
           {/* TAB 2: REGISTER */}
-          {/* ======================================================== */}
           {activeTab === 'register' && (
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
               <div>
@@ -387,7 +385,7 @@ export const AuthModal: React.FC = () => {
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     placeholder="Ex: Carlos Eduardo Silveira"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
               </div>
@@ -405,7 +403,7 @@ export const AuthModal: React.FC = () => {
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       placeholder="seu@email.com"
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -422,7 +420,7 @@ export const AuthModal: React.FC = () => {
                       value={regPhone}
                       onChange={handlePhoneChange}
                       placeholder="(47) 99999-9999"
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -440,7 +438,7 @@ export const AuthModal: React.FC = () => {
                       value={regCpf}
                       onChange={handleCpfChange}
                       placeholder="000.000.000-00"
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -458,7 +456,7 @@ export const AuthModal: React.FC = () => {
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="Mínimo 6 caracteres"
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                     <button
                       type="button"
@@ -485,7 +483,7 @@ export const AuthModal: React.FC = () => {
                       value={regStreet}
                       onChange={(e) => setRegStreet(e.target.value)}
                       placeholder="Rua / Avenida"
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-[#10b981]"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-blue-600"
                     />
                   </div>
                   <div>
@@ -494,23 +492,32 @@ export const AuthModal: React.FC = () => {
                       value={regNumber}
                       onChange={(e) => setRegNumber(e.target.value)}
                       placeholder="Número"
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-[#10b981]"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-blue-600"
                     />
                   </div>
                 </div>
-                <select
-                  value={regNeighborhood}
-                  onChange={(e) => setRegNeighborhood(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:ring-1 focus:ring-[#10b981]"
-                >
-                  <option value="Centro" className="bg-white text-slate-800">Centro (Itapema)</option>
-                  <option value="Meia Praia" className="bg-white text-slate-800">Meia Praia</option>
-                  <option value="Morretes" className="bg-white text-slate-800">Morretes</option>
-                  <option value="Canto da Praia" className="bg-white text-slate-800">Canto da Praia</option>
-                  <option value="Tabuleiro" className="bg-white text-slate-800">Tabuleiro</option>
-                  <option value="Várzea" className="bg-white text-slate-800">Várzea</option>
-                  <option value="Alto São Bento" className="bg-white text-slate-800">Alto São Bento</option>
-                </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <select
+                    value={regNeighborhood}
+                    onChange={(e) => setRegNeighborhood(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:ring-1 focus:ring-blue-600"
+                  >
+                    <option value="Centro" className="bg-white text-slate-800">Centro (Itapema)</option>
+                    <option value="Meia Praia" className="bg-white text-slate-800">Meia Praia</option>
+                    <option value="Morretes" className="bg-white text-slate-800">Morretes</option>
+                    <option value="Canto da Praia" className="bg-white text-slate-800">Canto da Praia</option>
+                    <option value="Tabuleiro" className="bg-white text-slate-800">Tabuleiro</option>
+                    <option value="Várzea" className="bg-white text-slate-800">Várzea</option>
+                    <option value="Alto São Bento" className="bg-white text-slate-800">Alto São Bento</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={regApartmentNumber}
+                    onChange={(e) => setRegApartmentNumber(e.target.value)}
+                    placeholder="Apto / Bloco (Opcional)"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-blue-600"
+                  />
+                </div>
               </div>
 
               {/* Observações Farmacêuticas */}
@@ -523,21 +530,21 @@ export const AuthModal: React.FC = () => {
                   value={regHealthNotes}
                   onChange={(e) => setRegHealthNotes(e.target.value)}
                   placeholder="Ex: Alergia a Dipirona, diabético(a), hipertenso(a)..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                 ></textarea>
               </div>
 
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                <p className="text-[11px] text-emerald-800 font-medium">
-                  Você ganha <strong className="font-bold text-emerald-950">+50 Pontos Fidelidade</strong> no ato do cadastro!
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                <p className="text-[11px] text-blue-900 font-medium">
+                  Você ganha <strong className="font-bold text-blue-950">+50 Pontos Fidelidade</strong> no ato do cadastro!
                 </p>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-950/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -551,9 +558,7 @@ export const AuthModal: React.FC = () => {
             </form>
           )}
 
-          {/* ======================================================== */}
           {/* TAB 3: FORGOT PASSWORD */}
-          {/* ======================================================== */}
           {activeTab === 'forgot_password' && (
             <div className="space-y-4">
               {recoveryStep === 'request' ? (
@@ -570,7 +575,7 @@ export const AuthModal: React.FC = () => {
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         placeholder="ex: seu.email@exemplo.com"
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981] transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                       />
                     </div>
                   </div>
@@ -582,7 +587,7 @@ export const AuthModal: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-950/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {loading ? (
                       <span className="flex items-center gap-2">
@@ -596,7 +601,7 @@ export const AuthModal: React.FC = () => {
                 </form>
               ) : (
                 <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5 animate-in fade-in">
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900">
                     Código de verificação de 6 dígitos gerado para <strong>{forgotEmail}</strong>
                   </div>
 
@@ -611,7 +616,7 @@ export const AuthModal: React.FC = () => {
                       value={recoveryCode}
                       onChange={(e) => setRecoveryCode(e.target.value.replace(/\D/g, ''))}
                       placeholder="Ex: 123456"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 text-center tracking-widest font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 text-center tracking-widest font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
 
@@ -628,7 +633,7 @@ export const AuthModal: React.FC = () => {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Digite sua nova senha"
-                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                       />
                       <button
                         type="button"
@@ -655,7 +660,7 @@ export const AuthModal: React.FC = () => {
                         value={confirmNewPassword}
                         onChange={(e) => setConfirmNewPassword(e.target.value)}
                         placeholder="Repita a nova senha"
-                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                       />
                       <button
                         type="button"
@@ -680,7 +685,7 @@ export const AuthModal: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-950/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {loading ? (
                         <span className="flex items-center gap-2">

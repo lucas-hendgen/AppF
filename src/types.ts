@@ -2,6 +2,7 @@ export interface UserAddress {
   id: string;
   street: string;
   number: string;
+  apartmentNumber?: string;
   complement?: string;
   neighborhood: string;
   city: string;
@@ -63,6 +64,7 @@ export interface Category {
   nome_categoria: string;
   titulo_exibicao: string;
   descricao: string;
+  status: 'Ativa' | 'Inativa';
   ordem: number;
   icone?: string;
 }

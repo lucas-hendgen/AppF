@@ -6,6 +6,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     nome_categoria: 'medicamentos',
     titulo_exibicao: '💊 Medicamentos',
     descricao: 'Analgésicos, antitérmicos, anti-inflamatórios e soluções',
+    status: 'Ativa',
     ordem: 1
   },
   {
@@ -13,6 +14,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     nome_categoria: 'higiene',
     titulo_exibicao: '🧴 Higiene Pessoal',
     descricao: 'Sabonetes, cremes dentais, álcool em gel e protetor solar',
+    status: 'Ativa',
     ordem: 2
   },
   {
@@ -20,6 +22,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     nome_categoria: 'perfumaria',
     titulo_exibicao: '🌸 Perfumaria & Cuidados',
     descricao: 'Hidratantes, desodorantes, shampoos e colônias',
+    status: 'Ativa',
     ordem: 3
   },
   {
@@ -27,6 +30,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     nome_categoria: 'infantil',
     titulo_exibicao: '👶 Linha Infantil & Bebê',
     descricao: 'Fraldas descartáveis, lenços e pomadas para assaduras',
+    status: 'Ativa',
     ordem: 4
   },
   {
@@ -34,6 +38,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     nome_categoria: 'vitaminas',
     titulo_exibicao: '🍊 Vitaminas & Suplementos',
     descricao: 'Vitamina C, multivitamínicos e Ômega 3',
+    status: 'Ativa',
     ordem: 5
   }
 ];

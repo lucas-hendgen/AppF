@@ -118,8 +118,8 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
                 onClick={() => setFilter(tab.key)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shadow-sm ${
                   filter === tab.key
-                    ? 'bg-purple-700 text-white'
-                    : 'bg-slate-55 text-slate-600 hover:bg-slate-100 hover:text-slate-800 border border-slate-200/60'
+                    ? 'bg-blue-600 text-white shadow-blue-950/20'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 border border-slate-200/60'
                 }`}
               >
                 {tab.label}
@@ -134,7 +134,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
           <button
             onClick={() => load(false)}
             disabled={refreshing || loading}
-            className="p-2 rounded-xl bg-slate-55 hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-800 transition-colors"
+            className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-800 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
@@ -146,18 +146,18 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por nome do cliente ou número do pedido (ex: PED-7841)..."
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-450 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981] transition-all font-medium shadow-sm"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-medium shadow-sm"
         />
       </div>
 
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-slate-55 border border-slate-150 rounded-2xl p-5 animate-pulse h-32" />
+            <div key={i} className="bg-slate-50 border border-slate-150 rounded-2xl p-5 animate-pulse h-32" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-550 text-sm font-semibold bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+        <div className="text-center py-16 text-slate-500 text-sm font-semibold bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
           Nenhum pedido encontrado.
         </div>
       ) : (
@@ -170,16 +170,16 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
             const isBusy = updating === order.id;
 
             return (
-              <div key={order.id} className="bg-white border border-slate-200/80 hover:border-purple-300 rounded-2xl p-4 flex flex-col justify-between shadow-sm hover:shadow transition-all space-y-3">
+              <div key={order.id} className="bg-white border border-slate-200/80 hover:border-blue-300 rounded-2xl p-4 flex flex-col justify-between shadow-sm hover:shadow transition-all space-y-3">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-mono font-bold text-purple-700 text-xs">#{order.id}</span>
+                        <span className="font-mono font-bold text-blue-700 text-xs">#{order.id}</span>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${sc.color}`}>
                           {sc.icon} {sc.label}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${PAYMENT_STATUS[order.paymentStatus] ?? 'bg-slate-100 text-slate-650'}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${PAYMENT_STATUS[order.paymentStatus] ?? 'bg-slate-100 text-slate-600'}`}>
                           {order.paymentStatus === 'paid' ? 'Pago' : order.paymentStatus === 'pending' ? 'Aguardando' : order.paymentStatus === 'failed' ? 'Falhou' : 'Estornado'}
                         </span>
                       </div>
@@ -192,11 +192,11 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
                       </p>
                       <p className="text-[11px] font-bold text-slate-500 mt-1.5 flex items-center gap-1 flex-wrap">
                         <span>💳 Pago via:</span>
-                        <span className="text-slate-850 font-extrabold">{getPaymentMethodLabel(order.paymentMethod)}</span>
+                        <span className="text-slate-800 font-extrabold">{getPaymentMethodLabel(order.paymentMethod)}</span>
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-base font-black text-[#10b981]">R$ {order.total.toFixed(2).replace('.', ',')}</p>
+                      <p className="text-base font-black text-blue-700">R$ {order.total.toFixed(2).replace('.', ',')}</p>
                       <p className="text-[10px] text-slate-400 font-bold">{order.items.length} {order.items.length === 1 ? 'item' : 'itens'}</p>
                     </div>
                   </div>
@@ -204,12 +204,12 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
                   {/* Delivery Address & Change Info */}
                   <div className="space-y-2">
                     {order.deliveryType === 'delivery' && order.address && (
-                      <div className="text-[11px] text-slate-700 bg-emerald-50/30 border border-emerald-100 rounded-xl p-2.5 space-y-1">
-                        <strong className="text-emerald-800 font-extrabold block">📍 Endereço de Entrega:</strong>
+                      <div className="text-[11px] text-slate-700 bg-blue-50/40 border border-blue-100 rounded-xl p-2.5 space-y-1">
+                        <strong className="text-blue-900 font-extrabold block">📍 Endereço de Entrega:</strong>
                         <p className="font-semibold text-slate-700 leading-relaxed">
                           {typeof order.address === 'string'
                             ? order.address
-                            : `${order.address.street}, ${order.address.number}${order.address.complement ? ` - ${order.address.complement}` : ''}, ${order.address.neighborhood}, ${order.address.city} - ${order.address.state}`}
+                            : `${order.address.street}, ${order.address.number}${order.address.apartmentNumber ? ` - Apto/Bloco: ${order.address.apartmentNumber}` : ''}${order.address.complement ? ` (${order.address.complement})` : ''}, ${order.address.neighborhood}, ${order.address.city} - ${order.address.state}`}
                         </p>
                       </div>
                     )}
@@ -223,7 +223,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
                   </div>
 
                   {/* Items List */}
-                  <div className="text-xs text-slate-655 bg-slate-50/60 border border-slate-150 rounded-xl p-3 space-y-1">
+                  <div className="text-xs text-slate-600 bg-slate-50/60 border border-slate-150 rounded-xl p-3 space-y-1">
                     {order.items.map((item, i) => (
                       <div key={i} className="flex justify-between font-medium">
                         <span>{item.quantity}× {item.name}</span>
@@ -243,7 +243,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
                     <button
                       onClick={() => advance(order)}
                       disabled={isBusy}
-                      className="flex-1 py-2 text-xs font-bold rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-all shadow-md shadow-purple-100 hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+                      className="flex-1 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md shadow-blue-950/20 hover:scale-[1.01] active:scale-95 disabled:opacity-50"
                     >
                       {isBusy ? 'Atualizando...' : `Avançar para ${STATUS_CONFIG[FLOW[currentIdx + 1]]?.label}`}
                     </button>
@@ -252,7 +252,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ setGlobalLoading }) =>
                     <button
                       onClick={() => cancel(order)}
                       disabled={isBusy}
-                      className="px-4 py-2 text-xs font-bold rounded-xl bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 transition-all disabled:opacity-50"
+                      className="px-4 py-2 text-xs font-bold rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-all disabled:opacity-50"
                     >
                       Cancelar
                     </button>

@@ -1,9 +1,37 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, X, Save, RefreshCw, Package, Download, Printer, Search, Filter, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Sparkles, Flame, Award, Tag, Zap, Star, Barcode, DollarSign } from 'lucide-react';
+import { 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  X, 
+  Save, 
+  RefreshCw, 
+  Package, 
+  Download, 
+  Printer, 
+  Search, 
+  Filter, 
+  ChevronLeft, 
+  ChevronRight, 
+  CheckCircle2, 
+  AlertCircle, 
+  Sparkles, 
+  Flame, 
+  Award, 
+  Tag, 
+  Zap, 
+  Star, 
+  Barcode, 
+  DollarSign,
+  Layers,
+  Power,
+  PowerOff,
+  FolderPlus,
+  Info
+} from 'lucide-react';
 import { api } from '../../services/api';
-import { Product, PromotionalSection } from '../../types';
-
-const DEFAULT_CATEGORIES = ['medicamentos', 'higiene', 'perfumaria', 'infantil', 'vitaminas'];
+import { Product, Category, PromotionalSection } from '../../types';
+import { INITIAL_CATEGORIES } from '../../data/pharmacyData';
 
 const PROMO_SECTIONS_LIST: { key: PromotionalSection; label: string }[] = [
   { key: 'geral', label: 'Nenhuma (Catálogo Geral)' },
@@ -35,16 +63,30 @@ interface AdminProductsProps {
 
 export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Product Edit/Create Modal
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<Omit<Product, 'id'>>(EMPTY_FORM);
   
-  // Custom Category Creation State
+  // Category Manager Modal
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [catActionLoading, setCatActionLoading] = useState(false);
+  const [catFeedback, setCatFeedback] = useState('');
+  const [catError, setCatError] = useState('');
+  
+  // New Category Form inside Category Manager Modal
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatTitle, setNewCatTitle] = useState('');
+  const [newCatDesc, setNewCatDesc] = useState('');
+  const [newCatStatus, setNewCatStatus] = useState<'Ativa' | 'Inativa'>('Ativa');
+
+  // Quick Category Creation in Product Modal
   const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [quickCatName, setQuickCatName] = useState('');
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
@@ -68,12 +110,12 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
       setRefreshing(true);
     }
     try {
-      const data = await api.getAdminProducts();
-      setProducts(data);
-      
-      // Extract unique custom categories
-      const allCats = Array.from(new Set(data.map(p => p.categoria.toLowerCase())));
-      setCustomCategories(allCats);
+      const [prodsData, catsData] = await Promise.all([
+        api.getAdminProducts().catch(() => []),
+        api.fetchCategories(true).catch(() => INITIAL_CATEGORIES)
+      ]);
+      setProducts(prodsData);
+      setCategories(catsData);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -81,11 +123,6 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
   };
 
   useEffect(() => { load(true); }, []);
-
-  // All combined available categories
-  const allCategories = useMemo(() => {
-    return Array.from(new Set([...DEFAULT_CATEGORIES, ...customCategories]));
-  }, [customCategories]);
 
   // Filtered Products
   const filtered = useMemo(() => {
@@ -129,14 +166,16 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
       const stock = p.estoque || 10;
       return acc + (numericPrice * stock);
     }, 0);
-    return { total, active, inactive, totalValue, categoriesCount: allCategories.length };
-  }, [products, allCategories]);
+    const activeCats = categories.filter(c => c.status !== 'Inativa').length;
+    const inactiveCats = categories.length - activeCats;
+    return { total, active, inactive, totalValue, categoriesCount: categories.length, activeCats, inactiveCats };
+  }, [products, categories]);
 
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
     setIsCreatingNewCategory(false);
-    setNewCategoryName('');
+    setQuickCatName('');
     setError('');
     setShowModal(true);
   };
@@ -150,7 +189,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
       promotionalSection: p.promotionalSection || 'geral'
     });
     setIsCreatingNewCategory(false);
-    setNewCategoryName('');
+    setQuickCatName('');
     setError('');
     setShowModal(true);
   };
@@ -175,11 +214,22 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
 
     let finalCategory = form.categoria;
     if (isCreatingNewCategory) {
-      if (!newCategoryName.trim()) {
+      if (!quickCatName.trim()) {
         setError('Digite o nome da nova categoria ou desmarque a opção.');
         return;
       }
-      finalCategory = newCategoryName.trim().toLowerCase();
+      finalCategory = quickCatName.trim().toLowerCase();
+
+      // Create new category in database as well
+      try {
+        await api.createCategory({
+          nome_categoria: finalCategory,
+          titulo_exibicao: quickCatName.trim(),
+          status: 'Ativa'
+        });
+      } catch (err) {
+        // Continue even if category already exists
+      }
     }
 
     setSaving(true);
@@ -203,10 +253,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
         setFeedback(`Novo produto "${created.nome}" cadastrado com sucesso!`);
       }
 
-      if (isCreatingNewCategory && !customCategories.includes(finalCategory)) {
-        setCustomCategories(prev => [...prev, finalCategory]);
-      }
-
+      await load(false);
       setShowModal(false);
       setTimeout(() => setFeedback(''), 3500);
     } catch (e: any) {
@@ -229,6 +276,77 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
     } finally {
       setDeleting(null);
       if (setGlobalLoading) setGlobalLoading(false);
+    }
+  };
+
+  // === CATEGORY MANAGEMENT ACTIONS ===
+  const handleToggleCategoryStatus = async (cat: Category) => {
+    const nextStatus: 'Ativa' | 'Inativa' = cat.status === 'Ativa' ? 'Inativa' : 'Ativa';
+    setCatActionLoading(true);
+    setCatError('');
+    try {
+      await api.updateCategory(cat.id, { status: nextStatus });
+      setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, status: nextStatus } : c));
+      setCatFeedback(`Categoria "${cat.titulo_exibicao || cat.nome_categoria}" alterada para ${nextStatus}.`);
+      setTimeout(() => setCatFeedback(''), 4000);
+    } catch (err: any) {
+      setCatError(err.message || 'Erro ao alternar status da categoria.');
+    } finally {
+      setCatActionLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (cat: Category) => {
+    const count = products.filter(p => p.categoria.toLowerCase() === cat.nome_categoria.toLowerCase()).length;
+    const warning = count > 0 
+      ? `A categoria "${cat.titulo_exibicao || cat.nome_categoria}" possui ${count} produto(s) vinculado(s).\n\nAo excluir, todos esses produtos serão automaticamente transferidos para a categoria "medicamentos". Deseja continuar?`
+      : `Tem certeza que deseja excluir a categoria "${cat.titulo_exibicao || cat.nome_categoria}"?`;
+
+    if (!confirm(warning)) return;
+
+    setCatActionLoading(true);
+    setCatError('');
+    try {
+      await api.deleteCategory(cat.id, 'medicamentos');
+      setCatFeedback(`Categoria "${cat.titulo_exibicao || cat.nome_categoria}" excluída com sucesso.`);
+      await load(false);
+      setTimeout(() => setCatFeedback(''), 4000);
+    } catch (err: any) {
+      setCatError(err.message || 'Erro ao excluir categoria.');
+    } finally {
+      setCatActionLoading(false);
+    }
+  };
+
+  const handleCreateCategoryFromManager = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) {
+      setCatError('O identificador da categoria é obrigatório.');
+      return;
+    }
+
+    setCatActionLoading(true);
+    setCatError('');
+    try {
+      const slug = newCatName.trim().toLowerCase().replace(/\s+/g, '-');
+      const created = await api.createCategory({
+        nome_categoria: slug,
+        titulo_exibicao: newCatTitle.trim() || newCatName.trim(),
+        descricao: newCatDesc.trim() || undefined,
+        status: newCatStatus
+      });
+
+      setCategories(prev => [...prev, created]);
+      setNewCatName('');
+      setNewCatTitle('');
+      setNewCatDesc('');
+      setNewCatStatus('Ativa');
+      setCatFeedback(`Nova categoria "${created.titulo_exibicao || created.nome_categoria}" criada com sucesso!`);
+      setTimeout(() => setCatFeedback(''), 4000);
+    } catch (err: any) {
+      setCatError(err.message || 'Erro ao criar nova categoria.');
+    } finally {
+      setCatActionLoading(false);
     }
   };
 
@@ -277,7 +395,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
     window.print();
   };
 
-  const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981] transition-all font-medium';
+  const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-medium';
 
   return (
     <div className="space-y-5 text-slate-700">
@@ -285,7 +403,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
       {/* 📊 Metrics Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-emerald-50 text-[#10b981] rounded-xl border border-emerald-100 shrink-0">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 shrink-0">
             <Package className="w-5 h-5" />
           </div>
           <div>
@@ -304,14 +422,25 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 shrink-0">
-            <Tag className="w-5 h-5" />
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Categorias</span>
+              <span className="text-base sm:text-lg font-black text-slate-800">
+                {metrics.activeCats} ativas <span className="text-xs text-slate-400 font-normal">({metrics.inactiveCats} inativas)</span>
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Categorias</span>
-            <span className="text-lg sm:text-xl font-black text-slate-800">{metrics.categoriesCount} tipos</span>
-          </div>
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold border border-purple-200 transition-colors"
+            title="Gerenciar Categorias do Catálogo"
+          >
+            Gerenciar
+          </button>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
@@ -331,16 +460,25 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
           <span className="text-xs font-bold text-slate-500">
             Exibindo <strong className="text-slate-800">{filtered.length}</strong> de {products.length} produtos
           </span>
-          {refreshing && <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />}
+          {refreshing && <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Botão Gerenciar Categorias */}
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-xl text-xs font-bold transition-all shadow-xs"
+            title="Gerenciar, inativar ou excluir categorias"
+          >
+            <Layers className="w-3.5 h-3.5 text-purple-600" /> Categorias
+          </button>
+
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all shadow-xs"
             title="Exportar dados em planilha Excel/CSV"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-600" /> Exportar CSV
+            <Download className="w-3.5 h-3.5 text-blue-600" /> Exportar CSV
           </button>
 
           <button
@@ -362,7 +500,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
 
           <button
             onClick={openCreate}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl text-xs font-black transition-all shadow-md shadow-emerald-100"
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-blue-950/20"
           >
             <Plus className="w-4 h-4" /> Novo Produto
           </button>
@@ -370,8 +508,8 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
       </div>
 
       {feedback && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+        <div className="p-3 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-blue-600" />
           {feedback}
         </div>
       )}
@@ -385,7 +523,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por Nome, SKU ou EAN..."
-            className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#10b981] font-medium shadow-xs"
+            className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium shadow-xs"
           />
         </div>
 
@@ -393,11 +531,13 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
           <select
             value={selectedCategory}
             onChange={e => setSelectedCategory(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#10b981] font-bold shadow-xs uppercase tracking-wider"
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold shadow-xs uppercase tracking-wider"
           >
-            <option value="todos">Todas as Categorias</option>
-            {allCategories.map(c => (
-              <option key={c} value={c}>{c}</option>
+            <option value="todos">Todas as Categorias ({categories.length})</option>
+            {categories.map(c => (
+              <option key={c.id || c.nome_categoria} value={c.nome_categoria}>
+                {c.titulo_exibicao || c.nome_categoria} {c.status === 'Inativa' ? '(Inativa)' : ''}
+              </option>
             ))}
           </select>
         </div>
@@ -406,7 +546,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
           <select
             value={selectedPromo}
             onChange={e => setSelectedPromo(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#10b981] font-bold shadow-xs"
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold shadow-xs"
           >
             <option value="todos">Todas as Vitrines Promocionais</option>
             {PROMO_SECTIONS_LIST.map(p => (
@@ -419,7 +559,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
           <select
             value={selectedStatus}
             onChange={e => setSelectedStatus(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#10b981] font-bold shadow-xs"
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold shadow-xs"
           >
             <option value="todos">Status: Todos</option>
             <option value="Ativo">Apenas Ativos</option>
@@ -451,83 +591,93 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paginatedProducts.map(p => (
-                <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="p-3 font-mono text-slate-500 font-bold whitespace-nowrap">
-                    <span className="block text-slate-800">{p.sku}</span>
-                    {p.ean && <span className="text-[10px] text-slate-400 font-mono flex items-center gap-0.5"><Barcode className="w-3 h-3" />{p.ean}</span>}
-                  </td>
-                  <td className="p-3 font-bold text-slate-800 max-w-[240px]">
-                    <div className="flex items-center gap-2.5">
-                      {p.imagem ? (
-                        <img src={p.imagem} alt={p.nome} className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0 bg-white" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 shrink-0">
-                          <Package className="w-4 h-4" />
+              {paginatedProducts.map(p => {
+                const categoryObj = categories.find(c => c.nome_categoria.toLowerCase() === p.categoria.toLowerCase());
+                const isCatInactive = categoryObj?.status === 'Inativa';
+
+                return (
+                  <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="p-3 font-mono text-slate-500 font-bold whitespace-nowrap">
+                      <span className="block text-slate-800">{p.sku}</span>
+                      {p.ean && <span className="text-[10px] text-slate-400 font-mono flex items-center gap-0.5"><Barcode className="w-3 h-3" />{p.ean}</span>}
+                    </td>
+                    <td className="p-3 font-bold text-slate-800 max-w-[240px]">
+                      <div className="flex items-center gap-2.5">
+                        {p.imagem ? (
+                          <img src={p.imagem} alt={p.nome} className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0 bg-white" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 shrink-0">
+                            <Package className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <span className="truncate block font-bold text-slate-850">{p.nome}</span>
+                          {p.descricao && <span className="text-[11px] text-slate-400 truncate block font-normal">{p.descricao}</span>}
                         </div>
-                      )}
-                      <div className="min-w-0">
-                        <span className="truncate block font-bold text-slate-850">{p.nome}</span>
-                        {p.descricao && <span className="text-[11px] text-slate-400 truncate block font-normal">{p.descricao}</span>}
                       </div>
-                    </div>
-                  </td>
-                  <td className="p-3 text-slate-600 uppercase tracking-wider font-bold text-[10px] hidden sm:table-cell whitespace-nowrap">
-                    <span className="px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200">
-                      {p.categoria}
-                    </span>
-                  </td>
-                  <td className="p-3 text-slate-600 hidden md:table-cell whitespace-nowrap">
-                    {p.promotionalSection && p.promotionalSection !== 'geral' ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
-                        {PROMO_SECTIONS_LIST.find(s => s.key === p.promotionalSection)?.label || p.promotionalSection}
+                    </td>
+                    <td className="p-3 text-slate-600 uppercase tracking-wider font-bold text-[10px] hidden sm:table-cell whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded-md border ${
+                        isCatInactive 
+                          ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                          : 'bg-slate-100 text-slate-700 border-slate-200'
+                      }`}>
+                        {categoryObj?.titulo_exibicao || p.categoria}
+                        {isCatInactive && <span className="text-[9px] lowercase ml-1 font-semibold opacity-75">(cat. inativa)</span>}
                       </span>
-                    ) : (
-                      <span className="text-[10px] text-slate-400">Catálogo Geral</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-[#10b981] font-black whitespace-nowrap">
-                    {p.preco.includes('#') ? 'Variações' : p.preco.toLowerCase().includes('consulte') ? 'Sob Consulta' : `R$ ${p.preco}`}
-                  </td>
-                  <td className="p-3 text-center whitespace-nowrap">
-                    <span className="font-bold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 text-[11px]">
-                      {p.estoque ?? 100} un
-                    </span>
-                  </td>
-                  <td className="p-3 text-center whitespace-nowrap">
-                    <button
-                      onClick={() => toggleStatus(p)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition-all ${
-                        p.status === 'Ativo'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
-                          : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-                      }`}
-                      title="Clique para alternar status do produto"
-                    >
-                      {p.status}
-                    </button>
-                  </td>
-                  <td className="p-3 text-center whitespace-nowrap">
-                    <div className="flex items-center justify-center gap-1.5">
+                    </td>
+                    <td className="p-3 text-slate-600 hidden md:table-cell whitespace-nowrap">
+                      {p.promotionalSection && p.promotionalSection !== 'geral' ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
+                          {PROMO_SECTIONS_LIST.find(s => s.key === p.promotionalSection)?.label || p.promotionalSection}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400">Catálogo Geral</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-blue-700 font-black whitespace-nowrap">
+                      {p.preco.includes('#') ? 'Variações' : p.preco.toLowerCase().includes('consulte') ? 'Sob Consulta' : `R$ ${p.preco}`}
+                    </td>
+                    <td className="p-3 text-center whitespace-nowrap">
+                      <span className="font-bold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 text-[11px]">
+                        {p.estoque ?? 100} un
+                      </span>
+                    </td>
+                    <td className="p-3 text-center whitespace-nowrap">
                       <button
-                        onClick={() => openEdit(p)}
-                        className="p-1.5 rounded-lg bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 transition-colors"
-                        title="Editar produto"
+                        onClick={() => toggleStatus(p)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition-all ${
+                          p.status === 'Ativo'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                            : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                        }`}
+                        title="Clique para alternar status do produto"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        {p.status}
                       </button>
-                      <button
-                        onClick={() => remove(p.id)}
-                        disabled={deleting === p.id}
-                        className="p-1.5 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 transition-colors disabled:opacity-50"
-                        title="Excluir produto"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="p-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => openEdit(p)}
+                          className="p-1.5 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200 transition-colors"
+                          title="Editar produto"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => remove(p.id)}
+                          disabled={deleting === p.id}
+                          className="p-1.5 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 transition-colors disabled:opacity-50"
+                          title="Excluir produto"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -586,10 +736,10 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 bg-gradient-to-r from-[#064e3b] to-[#047857] text-white rounded-t-3xl border-b border-emerald-800/30">
+            <div className="flex items-center justify-between p-5 bg-gradient-to-r from-[#0a192f] via-[#172554] to-[#1e3a8a] text-white rounded-t-3xl border-b border-blue-900/30">
               <div>
                 <h3 className="font-black text-base">{editing ? 'Editar Produto no Catálogo' : 'Cadastrar Novo Produto'}</h3>
-                <p className="text-xs text-emerald-100">Configuração completa para loja online e balcão físico</p>
+                <p className="text-xs text-blue-100">Configuração completa para loja online e balcão físico</p>
               </div>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                 <X className="w-5 h-5" />
@@ -638,43 +788,64 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
                 />
               </div>
 
-              {/* Categoria + Opção Criar Nova Categoria */}
+              {/* Categoria + Opções de Gestão de Categoria */}
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-slate-700 font-bold">Categoria do Produto *</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCreatingNewCategory(!isCreatingNewCategory);
-                      setNewCategoryName('');
-                    }}
-                    className="text-xs font-bold text-[#10b981] hover:text-[#059669] hover:underline"
-                  >
-                    {isCreatingNewCategory ? '← Selecionar existente' : '+ Criar Nova Categoria'}
-                  </button>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="text-xs text-slate-700 font-bold flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5 text-blue-600" /> Categoria do Produto *
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryModal(true)}
+                      className="text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-lg border border-purple-200 flex items-center gap-1 transition-colors"
+                    >
+                      <Layers className="w-3 h-3" /> Gerenciar Categorias
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingNewCategory(!isCreatingNewCategory);
+                        setQuickCatName('');
+                      }}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {isCreatingNewCategory ? '← Selecionar existente' : '+ Nova Categoria'}
+                    </button>
+                  </div>
                 </div>
 
                 {isCreatingNewCategory ? (
                   <div>
                     <input
                       type="text"
-                      value={newCategoryName}
-                      onChange={e => setNewCategoryName(e.target.value)}
+                      value={quickCatName}
+                      onChange={e => setQuickCatName(e.target.value)}
                       placeholder="Digite o nome da nova categoria (ex: Ortopédicos)..."
-                      className="w-full bg-white border border-emerald-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#10b981] font-bold"
+                      className="w-full bg-white border border-blue-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold"
                     />
-                    <p className="text-[11px] text-slate-400 mt-1">Essa categoria será salva e ficará disponível para os próximos produtos.</p>
+                    <p className="text-[11px] text-slate-400 mt-1">Essa categoria será criada como ativa e ficará disponível para todos os produtos.</p>
                   </div>
                 ) : (
-                  <select
-                    className={inputCls}
-                    value={form.categoria}
-                    onChange={e => setForm(prev => ({ ...prev, categoria: e.target.value }))}
-                  >
-                    {allCategories.map(c => (
-                      <option key={c} value={c}>{c.toUpperCase()}</option>
-                    ))}
-                  </select>
+                  <div>
+                    <select
+                      className={inputCls}
+                      value={form.categoria}
+                      onChange={e => setForm(prev => ({ ...prev, categoria: e.target.value }))}
+                    >
+                      {categories.map(c => (
+                        <option key={c.id || c.nome_categoria} value={c.nome_categoria}>
+                          {(c.titulo_exibicao || c.nome_categoria).toUpperCase()} {c.status === 'Inativa' ? ' [INATIVA NO SITE]' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {categories.find(c => c.nome_categoria.toLowerCase() === form.categoria.toLowerCase())?.status === 'Inativa' && (
+                      <p className="text-[11px] text-amber-700 font-medium mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        Aviso: Esta categoria está <strong>Inativa</strong> no momento. Os produtos desta categoria ficarão ocultos na loja pública até que ela seja reativada.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -783,7 +954,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
                 type="button"
                 onClick={save}
                 disabled={saving}
-                className="px-6 py-2.5 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl text-xs font-black transition-all shadow-md shadow-emerald-100 flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-blue-950/20 flex items-center gap-2 disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -796,6 +967,229 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ setGlobalLoading }
                     {editing ? 'Salvar Alterações' : 'Cadastrar Produto'}
                   </>
                 )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 📁 MODAL DE GERENCIAMENTO DE CATEGORIAS (INATIVAR / EXCLUIR / CRIAR) */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 bg-gradient-to-r from-[#0a192f] via-[#172554] to-[#1e3a8a] text-white rounded-t-3xl border-b border-blue-900/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white/10 rounded-xl">
+                  <Layers className="w-5 h-5 text-purple-300" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base">Gerenciador de Categorias</h3>
+                  <p className="text-xs text-blue-100">Ative, inative ou exclua categorias do catálogo com segurança</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowCategoryModal(false)} 
+                className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6 flex-1">
+              {catFeedback && (
+                <div className="p-3 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-blue-600" />
+                  {catFeedback}
+                </div>
+              )}
+
+              {catError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-750 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                  {catError}
+                </div>
+              )}
+
+              {/* Informative Notice */}
+              <div className="p-3.5 bg-blue-50/60 border border-blue-100 rounded-2xl flex items-start gap-2.5 text-xs text-blue-900">
+                <Info className="w-4 h-4 shrink-0 text-blue-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold leading-relaxed">
+                    <strong>Inativar:</strong> Oculta a categoria e todos os seus produtos da loja pública sem apagar nada.
+                  </p>
+                  <p className="font-semibold leading-relaxed mt-0.5">
+                    <strong>Excluir:</strong> Remove a categoria permanentemente. Os produtos vinculados a ela serão automaticamente transferidos para a categoria <em>"medicamentos"</em>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Nova Categoria Form */}
+              <form onSubmit={handleCreateCategoryFromManager} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <div className="flex items-center gap-2">
+                  <FolderPlus className="w-4 h-4 text-purple-600" />
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">Criar Nova Categoria</h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] text-slate-600 font-bold mb-1 block">Identificador (Slug) *</label>
+                    <input
+                      type="text"
+                      placeholder="ex: ortopedicos"
+                      value={newCatName}
+                      onChange={e => setNewCatName(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-slate-600 font-bold mb-1 block">Título de Exibição</label>
+                    <input
+                      type="text"
+                      placeholder="ex: Ortopédicos e Apoio"
+                      value={newCatTitle}
+                      onChange={e => setNewCatTitle(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-slate-600 font-bold mb-1 block">Status Inicial</label>
+                    <select
+                      value={newCatStatus}
+                      onChange={e => setNewCatStatus(e.target.value as 'Ativa' | 'Inativa')}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                    >
+                      <option value="Ativa">🟢 Ativa (Visível na loja)</option>
+                      <option value="Inativa">🔴 Inativa (Oculta na loja)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-600 font-bold mb-1 block">Descrição Breve (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="ex: Joelheiras, tipoias, munhequeiras e produtos ortopédicos"
+                    value={newCatDesc}
+                    onChange={e => setNewCatDesc(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={catActionLoading}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Adicionar Categoria
+                  </button>
+                </div>
+              </form>
+
+              {/* Tabela de Categorias Existentes */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">
+                  Categorias Cadastradas ({categories.length})
+                </h4>
+
+                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+                  <table className="w-full text-xs">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                      <tr>
+                        <th className="text-left p-3 font-black">Categoria</th>
+                        <th className="text-left p-3 font-black hidden sm:table-cell">Slug / Código</th>
+                        <th className="text-center p-3 font-black">Produtos</th>
+                        <th className="text-center p-3 font-black">Status</th>
+                        <th className="text-center p-3 font-black">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {categories.map(cat => {
+                        const count = products.filter(p => p.categoria.toLowerCase() === cat.nome_categoria.toLowerCase()).length;
+                        const isAtiva = cat.status !== 'Inativa';
+
+                        return (
+                          <tr key={cat.id || cat.nome_categoria} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="p-3">
+                              <span className="font-bold text-slate-800 block text-sm">
+                                {cat.titulo_exibicao || cat.nome_categoria}
+                              </span>
+                              {cat.descricao && (
+                                <span className="text-[11px] text-slate-400 block font-normal truncate max-w-xs">
+                                  {cat.descricao}
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 font-mono text-[11px] text-slate-500 hidden sm:table-cell">
+                              {cat.nome_categoria}
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className="px-2.5 py-0.5 rounded-full font-black text-[11px] bg-slate-100 text-slate-700 border border-slate-200">
+                                {count} {count === 1 ? 'item' : 'itens'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-center whitespace-nowrap">
+                              <button
+                                onClick={() => handleToggleCategoryStatus(cat)}
+                                disabled={catActionLoading}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black border transition-all ${
+                                  isAtiva
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                }`}
+                                title="Clique para alternar entre Ativa e Inativa"
+                              >
+                                {isAtiva ? <Power className="w-3 h-3 text-emerald-600" /> : <PowerOff className="w-3 h-3 text-amber-600" />}
+                                {isAtiva ? 'Ativa' : 'Inativa'}
+                              </button>
+                            </td>
+                            <td className="p-3 text-center whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => handleToggleCategoryStatus(cat)}
+                                  disabled={catActionLoading}
+                                  className={`p-1.5 rounded-lg border transition-colors ${
+                                    isAtiva 
+                                      ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                                  }`}
+                                  title={isAtiva ? 'Inativar Categoria' : 'Ativar Categoria'}
+                                >
+                                  {isAtiva ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCategory(cat)}
+                                  disabled={catActionLoading || cat.nome_categoria.toLowerCase() === 'medicamentos'}
+                                  className="p-1.5 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 transition-colors disabled:opacity-30 disabled:hover:bg-slate-50 disabled:hover:text-slate-600"
+                                  title={cat.nome_categoria.toLowerCase() === 'medicamentos' ? 'Categoria padrão não pode ser excluída' : 'Excluir Categoria'}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end rounded-b-3xl">
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-md"
+              >
+                Concluir
               </button>
             </div>
 

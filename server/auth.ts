@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { db, UserProfile, UserAddress } from './db.js';
@@ -77,7 +78,7 @@ export const authController = {
       }
 
       const cleanEmail = String(email).trim().toLowerCase();
-      const existingEmail = db.getUserByEmail(cleanEmail);
+      const existingEmail = await db.getUserByEmail(cleanEmail);
       if (existingEmail) {
         res.status(409).json({ error: 'Já existe uma conta cadastrada com este e-mail.' });
         return;
@@ -86,7 +87,7 @@ export const authController = {
       if (cpf) {
         const cleanCpf = String(cpf).replace(/\D/g, '');
         if (cleanCpf.length === 11) {
-          const existingCpf = db.getUserByCpf(cleanCpf);
+          const existingCpf = await db.getUserByCpf(cleanCpf);
           if (existingCpf) {
             res.status(409).json({ error: 'Já existe uma conta cadastrada com este CPF.' });
             return;
@@ -130,12 +131,17 @@ export const authController = {
         updatedAt: new Date().toISOString()
       };
 
-      db.createUser(newUser);
+      await db.createUser(newUser);
 
       // Verificação de persistência
-      const verifiedUser = db.getUserById(userId);
+      const verifiedUser = await db.getUserById(userId);
       if (!verifiedUser) {
         throw new Error('Falha ao confirmar gravação do usuário no banco de dados.');
+      }
+
+      // Limpa contador de rate limit em caso de sucesso
+      if (typeof (req as any).resetAuthRateLimit === 'function') {
+        await (req as any).resetAuthRateLimit();
       }
 
       const token = generateToken(verifiedUser);
@@ -164,19 +170,20 @@ export const authController = {
       let user: UserProfile | undefined;
 
       if (cleanIdentifier.includes('@')) {
-        user = db.getUserByEmail(cleanIdentifier);
+        user = await db.getUserByEmail(cleanIdentifier);
       } else {
         const cleanCpf = cleanIdentifier.replace(/\D/g, '');
         if (cleanCpf.length === 11) {
-          user = db.getUserByCpf(cleanCpf);
+          user = await db.getUserByCpf(cleanCpf);
         } else if (cleanIdentifier === 'admin') {
-          user = db.getUsers().find(u => u.role === 'admin');
+          const allUsers = await db.getUsers();
+          user = allUsers.find(u => u.role === 'admin');
         }
       }
 
       // Fallback search
       if (!user) {
-        user = db.getUserByEmail(cleanIdentifier);
+        user = await db.getUserByEmail(cleanIdentifier);
       }
 
       if (!user) {
@@ -188,6 +195,11 @@ export const authController = {
       if (!isMatch) {
         res.status(401).json({ error: 'E-mail, CPF ou senha incorretos.' });
         return;
+      }
+
+      // Limpa contador de rate limit após login bem-sucedido
+      if (typeof (req as any).resetAuthRateLimit === 'function') {
+        await (req as any).resetAuthRateLimit();
       }
 
       const token = generateToken(user);
@@ -210,7 +222,7 @@ export const authController = {
         return;
       }
 
-      const user = db.getUserById(req.user.id);
+      const user = await db.getUserById(req.user.id);
       if (!user) {
         res.status(404).json({ error: 'Usuário não encontrado.' });
         return;
@@ -237,7 +249,7 @@ export const authController = {
       if (cpf) updates.cpf = cpf.trim();
       if (healthNotes !== undefined) updates.healthNotes = healthNotes;
 
-      const updated = db.updateUser(req.user.id, updates);
+      const updated = await db.updateUser(req.user.id, updates);
       if (!updated) {
         res.status(404).json({ error: 'Usuário não encontrado.' });
         return;
@@ -259,7 +271,7 @@ export const authController = {
         return;
       }
 
-      const user = db.getUserById(req.user.id);
+      const user = await db.getUserById(req.user.id);
       if (!user) {
         res.status(404).json({ error: 'Usuário não encontrado.' });
         return;
@@ -290,7 +302,7 @@ export const authController = {
       }
       addresses.push(newAddress);
 
-      const updated = db.updateUser(req.user.id, { addresses });
+      const updated = await db.updateUser(req.user.id, { addresses });
       res.json({
         message: 'Endereço adicionado com sucesso.',
         addresses: updated?.addresses || [],
@@ -309,7 +321,8 @@ export const authController = {
       }
 
       const { addressId } = req.params;
-      const user = db.getUserById(req.user.id);
+
+      const user = await db.getUserById(req.user.id);
       if (!user) {
         res.status(404).json({ error: 'Usuário não encontrado.' });
         return;
@@ -320,7 +333,7 @@ export const authController = {
         addresses[0].isDefault = true;
       }
 
-      const updated = db.updateUser(req.user.id, { addresses });
+      const updated = await db.updateUser(req.user.id, { addresses });
       res.json({
         message: 'Endereço removido com sucesso.',
         addresses: updated?.addresses || [],
@@ -340,26 +353,20 @@ export const authController = {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      const user = db.getUserByEmail(cleanEmail);
+      const user = await db.getUserByEmail(cleanEmail);
 
-      if (!user) {
-        // Safe feedback message
-        res.status(404).json({ error: 'Não encontramos nenhuma conta com este e-mail.' });
-        return;
+      if (user) {
+        // Gera código criptograficamente seguro de 6 dígitos
+        const recoveryCode = crypto.randomInt(100000, 1000000).toString();
+        const recoveryCodeExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutos
+
+        // Salva código no banco de dados
+        await db.updateUser(user.id, { recoveryCode, recoveryCodeExpires });
       }
 
-      // Generate a 6-digit recovery code
-      const recoveryCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const recoveryCodeExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes expiration
-
-      // Save code to database
-      db.updateUser(user.id, { recoveryCode, recoveryCodeExpires });
-
-      // Log in server console for testing/development (no leak in response)
-      console.log(`\n🔑 [RECUPERAÇÃO DE SENHA] Código gerado para ${cleanEmail}: ${recoveryCode}\n`);
-
+      // Resposta genérica segura para prevenir enumeração de contas
       res.json({
-        message: `Instruções e código de recuperação enviados com sucesso para ${cleanEmail}!`,
+        message: `Se houver uma conta cadastrada com este e-mail, as instruções e código de recuperação foram gerados para ${cleanEmail}.`,
         email: cleanEmail
       });
     } catch (err) {
@@ -382,20 +389,20 @@ export const authController = {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      const user = db.getUserByEmail(cleanEmail);
+      const user = await db.getUserByEmail(cleanEmail);
 
       if (!user) {
-        res.status(404).json({ error: 'Usuário não encontrado.' });
+        res.status(400).json({ error: 'Código de verificação incorreto ou inválido.' });
         return;
       }
 
-      // Verify recovery code
+      // Verifica código de recuperação
       if (!user.recoveryCode || user.recoveryCode !== code) {
-        res.status(400).json({ error: 'Código de verificação incorreto.' });
+        res.status(400).json({ error: 'Código de verificação incorreto ou inválido.' });
         return;
       }
 
-      // Verify expiration
+      // Verifica expiração
       if (user.recoveryCodeExpires && new Date(user.recoveryCodeExpires).getTime() < Date.now()) {
         res.status(400).json({ error: 'O código de verificação expirou. Solicite um novo.' });
         return;
@@ -404,12 +411,18 @@ export const authController = {
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(newPassword, salt);
 
-      // Save new password and clean recovery fields
-      const updated = db.updateUser(user.id, {
+      // Salva nova senha e remove campos de recuperação
+      const updated = await db.updateUser(user.id, {
         passwordHash,
         recoveryCode: undefined,
         recoveryCodeExpires: undefined
       });
+
+      // Limpa contador de rate limit após sucesso
+      if (typeof (req as any).resetAuthRateLimit === 'function') {
+        await (req as any).resetAuthRateLimit();
+      }
+
       const token = generateToken(updated!);
 
       res.json({
@@ -433,7 +446,7 @@ export const authController = {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      let user = db.getUserByEmail(cleanEmail);
+      let user = await db.getUserByEmail(cleanEmail);
 
       if (!user) {
         // Automatically create account with Google info
@@ -458,7 +471,7 @@ export const authController = {
           updatedAt: new Date().toISOString()
         };
 
-        db.createUser(newUser);
+        await db.createUser(newUser);
         user = newUser;
       }
 

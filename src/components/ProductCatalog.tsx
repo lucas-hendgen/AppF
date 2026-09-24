@@ -11,10 +11,10 @@ interface ProductCatalogProps {
 
 const PROMOTIONAL_SECTIONS: { key: PromotionalSection; label: string; icon: any; gradient: string; badgeCls: string }[] = [
   { key: 'ofertas_imperdiveis', label: 'Ofertas Imperdíveis', icon: Flame, gradient: 'from-amber-500 to-rose-600', badgeCls: 'bg-rose-500 text-white' },
-  { key: 'leve_mais', label: 'Leve Mais por Muito Menos', icon: Zap, gradient: 'from-emerald-500 to-teal-600', badgeCls: 'bg-emerald-600 text-white' },
-  { key: 'super_ofertas', label: 'Super Ofertas da Semana', icon: Star, gradient: 'from-blue-500 to-indigo-600', badgeCls: 'bg-blue-600 text-white' },
-  { key: 'mais_vendidos', label: 'Os Mais Vendidos', icon: Award, gradient: 'from-purple-500 to-pink-600', badgeCls: 'bg-purple-600 text-white' },
-  { key: 'lancamentos', label: 'Principais Lançamentos', icon: Sparkles, gradient: 'from-emerald-600 to-teal-700', badgeCls: 'bg-teal-600 text-white' },
+  { key: 'leve_mais', label: 'Leve Mais por Muito Menos', icon: Zap, gradient: 'from-blue-600 to-indigo-600', badgeCls: 'bg-blue-600 text-white' },
+  { key: 'super_ofertas', label: 'Super Ofertas da Semana', icon: Star, gradient: 'from-sky-500 to-blue-700', badgeCls: 'bg-sky-600 text-white' },
+  { key: 'mais_vendidos', label: 'Os Mais Vendidos', icon: Award, gradient: 'from-blue-700 to-indigo-800', badgeCls: 'bg-indigo-700 text-white' },
+  { key: 'lancamentos', label: 'Principais Lançamentos', icon: Sparkles, gradient: 'from-blue-600 to-sky-700', badgeCls: 'bg-blue-700 text-white' },
 ];
 
 export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDetail }) => {
@@ -26,26 +26,37 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [addedAnimationId, setAddedAnimationId] = useState<number | null>(null);
 
+  const [categoriesList, setCategoriesList] = useState<Category[]>(INITIAL_CATEGORIES);
+
   useEffect(() => {
-    api.fetchProducts()
-      .then(setProducts)
-      .catch(() => setProducts(INITIAL_PRODUCTS))
-      .finally(() => setIsLoading(false));
+    Promise.all([
+      api.fetchProducts().catch(() => INITIAL_PRODUCTS),
+      api.fetchCategories().catch(() => INITIAL_CATEGORIES)
+    ]).then(([prods, cats]) => {
+      setProducts(prods);
+      setCategoriesList(cats.filter(c => c.status !== 'Inativa'));
+    }).finally(() => setIsLoading(false));
   }, []);
 
-  // Unique categories list derived dynamically from products + initial categories
+  // Conjunto de nomes de categorias ativas (em minúsculas)
+  const activeCategorySet = useMemo(() => {
+    return new Set(categoriesList.map(c => c.nome_categoria.toLowerCase()));
+  }, [categoriesList]);
+
+  // Lista de nomes de categorias ativas para os botões de filtro
   const categories = useMemo(() => {
-    const set = new Set<string>(INITIAL_CATEGORIES.map(c => c.nome_categoria.toLowerCase()));
-    products.forEach(p => {
-      if (p.categoria) set.add(p.categoria.toLowerCase());
-    });
-    return Array.from(set);
-  }, [products]);
+    return categoriesList.map(c => c.nome_categoria.toLowerCase());
+  }, [categoriesList]);
 
   // Filter products
   const filteredProducts = useMemo(() => {
     return products.filter((prod) => {
       if (prod.status !== 'Ativo') return false;
+
+      // Oculta produtos cuja categoria esteja inativa
+      if (prod.categoria && activeCategorySet.size > 0 && !activeCategorySet.has(prod.categoria.toLowerCase())) {
+        return false;
+      }
 
       // Filter by promotional showcase tab
       if (activeTab !== 'all') {
@@ -102,7 +113,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
     <div className="space-y-6">
       
       {/* Search and Navigation Bar */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-md border border-slate-200/80 space-y-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/80 space-y-4">
         
         {/* Search Input */}
         <div className="relative">
@@ -112,7 +123,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar por medicamento, vitamina, cosmético ou sintoma..."
-            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981] transition-all"
+            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
           />
           {searchQuery && (
             <button
@@ -137,8 +148,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
               }}
               className={`px-3.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all shadow-xs flex items-center gap-1.5 ${
                 activeTab === 'all' && selectedCategory === 'todos'
-                  ? 'bg-slate-800 text-white shadow-md'
-                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-blue-950 text-white shadow-md'
+                  : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               🏪 Todos os Produtos ({products.filter(p => p.status === 'Ativo').length})
@@ -176,7 +187,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
               onClick={() => setSelectedCategory('todos')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
                 selectedCategory === 'todos'
-                  ? 'bg-[#10b981] text-white'
+                  ? 'bg-blue-600 text-white shadow-xs'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -192,7 +203,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap uppercase tracking-wider transition-all ${
                   selectedCategory === cat
-                    ? 'bg-[#10b981] text-white shadow-xs'
+                    ? 'bg-blue-600 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -206,7 +217,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
 
       {/* Active Section Header Banner if specific showcase selected */}
       {activeTab !== 'all' && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-900 via-[#064e3b] to-emerald-800 text-white shadow-md flex items-center justify-between animate-in fade-in">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0a192f] via-[#1e3a8a] to-[#0f172a] text-white shadow-md flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-white/10 rounded-xl">
               {React.createElement(PROMOTIONAL_SECTIONS.find(s => s.key === activeTab)?.icon || Sparkles, { className: 'w-5 h-5 text-amber-300' })}
@@ -215,7 +226,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
               <h2 className="text-base font-black text-white">
                 {PROMOTIONAL_SECTIONS.find(s => s.key === activeTab)?.label}
               </h2>
-              <p className="text-xs text-emerald-100 font-medium">Produtos selecionados e administrados pela nossa equipe farmacêutica</p>
+              <p className="text-xs text-blue-100 font-medium">Produtos selecionados e administrados pela nossa equipe farmacêutica</p>
             </div>
           </div>
           <button
@@ -231,7 +242,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-slate-100 shadow-md animate-pulse">
+            <div key={i} className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-slate-100 shadow-sm animate-pulse">
               <div className="w-full aspect-square bg-slate-200 rounded-2xl mb-3" />
               <div className="h-3 bg-slate-200 rounded mb-2 w-3/4" />
               <div className="h-3 bg-slate-200 rounded w-1/2" />
@@ -249,10 +260,10 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
               <div
                 key={product.id}
                 onClick={() => onOpenProductDetail(product)}
-                className="group bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-slate-100 shadow-md hover:shadow-xl hover:border-emerald-400 transition-all duration-300 flex flex-col justify-between cursor-pointer relative overflow-hidden"
+                className="group bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-slate-200/70 shadow-xs hover:shadow-xl hover:border-blue-400 transition-all duration-300 flex flex-col justify-between cursor-pointer relative overflow-hidden"
               >
                 <div>
-                  {/* Product Image Container (SEM código SKU visível no card) */}
+                  {/* Product Image Container */}
                   <div className="relative w-full aspect-square bg-slate-50/50 rounded-2xl overflow-hidden mb-3 border border-slate-100 flex items-center justify-center p-2 group-hover:scale-[1.02] transition-transform duration-300">
                     <img
                       src={product.imagem}
@@ -271,12 +282,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
                   </div>
 
                   {/* Category Tag */}
-                  <span className="text-[10px] uppercase font-bold text-[#10b981] tracking-wider block mb-1">
+                  <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider block mb-1">
                     {product.categoria}
                   </span>
 
                   {/* Product Title */}
-                  <h3 className="font-bold text-xs sm:text-sm text-slate-800 line-clamp-2 leading-tight group-hover:text-[#10b981] transition-colors">
+                  <h3 className="font-bold text-xs sm:text-sm text-slate-850 line-clamp-2 leading-tight group-hover:text-blue-700 transition-colors">
                     {product.nome}
                   </h3>
 
@@ -301,8 +312,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
                     onClick={(e) => handleQuickAdd(e, product)}
                     className={`p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
                       isAdded
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-[#10b981] hover:bg-[#059669] text-white shadow-md shadow-emerald-100/40 hover:scale-105 active:scale-95'
+                        ? 'bg-blue-700 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-100/40 hover:scale-105 active:scale-95'
                     }`}
                     title={hasVariations ? "Ver opções do produto" : "Adicionar ao carrinho"}
                   >
@@ -333,7 +344,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
           <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto text-slate-400">
             <Filter className="w-6 h-6" />
           </div>
-          <h3 className="font-bold text-sm text-slate-700">Nenhum produto encontrado nesta vitrine</h3>
+          <h3 className="font-bold text-sm text-slate-750">Nenhum produto encontrado nesta vitrine</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             Tente buscar com outro termo ou selecione "Todos os Produtos".
           </p>
@@ -343,7 +354,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({ onOpenProductDet
               setSelectedCategory('todos');
               setActiveTab('all');
             }}
-            className="px-4 py-2 bg-[#10b981] text-white text-xs font-bold rounded-xl shadow-md"
+            className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-blue-700"
           >
             Limpar Filtros
           </button>

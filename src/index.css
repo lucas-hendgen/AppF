@@ -1,1 +1,85 @@
 @import "tailwindcss";
+
+@layer utilities {
+  /* Dynamic RGB Ambient Gradient Animations */
+  @keyframes rgbMeshShift {
+    0% {
+      background-position: 0% 50%, 100% 50%, 50% 0%;
+      filter: hue-rotate(0deg);
+    }
+    50% {
+      background-position: 100% 50%, 0% 50%, 50% 100%;
+      filter: hue-rotate(25deg);
+    }
+    100% {
+      background-position: 0% 50%, 100% 50%, 50% 0%;
+      filter: hue-rotate(0deg);
+    }
+  }
+
+  @keyframes floatOrb1 {
+    0%, 100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(60px, -40px) scale(1.15);
+    }
+    66% {
+      transform: translate(-40px, 50px) scale(0.9);
+    }
+  }
+
+  @keyframes floatOrb2 {
+    0%, 100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(-50px, 60px) scale(0.95);
+    }
+    66% {
+      transform: translate(70px, -30px) scale(1.2);
+    }
+  }
+
+  @keyframes floatOrb3 {
+    0%, 100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    50% {
+      transform: translate(40px, 40px) scale(1.1);
+    }
+  }
+
+  @keyframes rgbBorderFlow {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animate-rgb-mesh {
+    animation: rgbMeshShift 18s ease-in-out infinite;
+  }
+
+  .animate-float-orb-1 {
+    animation: floatOrb1 14s ease-in-out infinite;
+  }
+
+  .animate-float-orb-2 {
+    animation: floatOrb2 18s ease-in-out infinite;
+  }
+
+  .animate-float-orb-3 {
+    animation: floatOrb3 12s ease-in-out infinite;
+  }
+
+  .animate-rgb-flow {
+    background-size: 300% 300%;
+    animation: rgbBorderFlow 6s ease infinite;
+  }
+}

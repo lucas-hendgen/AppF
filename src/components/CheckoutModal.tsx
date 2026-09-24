@@ -70,6 +70,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [street, setStreet] = useState('');
   const [number, setNumber] = useState('');
+  const [apartmentNumber, setApartmentNumber] = useState('');
   const [complement, setComplement] = useState('');
   const [neighborhood, setNeighborhood] = useState('centro');
   const [cep, setCep] = useState('88220-000');
@@ -97,6 +98,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
         setSelectedAddressId(defaultAddr.id);
         setStreet(defaultAddr.street);
         setNumber(defaultAddr.number);
+        setApartmentNumber(defaultAddr.apartmentNumber || '');
         setComplement(defaultAddr.complement || '');
         setNeighborhood(defaultAddr.neighborhood.toLowerCase());
         setCep(defaultAddr.cep || '88220-000');
@@ -192,6 +194,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
     setSelectedAddressId(addr.id);
     setStreet(addr.street);
     setNumber(addr.number);
+    setApartmentNumber(addr.apartmentNumber || '');
     setComplement(addr.complement || '');
     setNeighborhood(addr.neighborhood.toLowerCase());
     setCep(addr.cep || '88220-000');
@@ -234,7 +237,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
           id: selectedAddressId || 'addr_custom',
           street,
           number: number || 'S/N',
-          complement,
+          apartmentNumber: apartmentNumber.trim() || undefined,
+          complement: complement.trim() || undefined,
           neighborhood,
           city: 'Itapema',
           state: 'SC',
@@ -308,14 +312,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
       <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] text-slate-600">
         
         {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-[#064e3b] to-[#047857] text-white flex items-center justify-between border-b border-[#065f46]/30">
+        <div className="p-5 bg-gradient-to-r from-[#0a192f] via-[#172554] to-[#1e3a8a] text-white flex items-center justify-between border-b border-blue-900/30">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 text-emerald-300 rounded-xl border border-emerald-400/20 shadow-inner">
+            <div className="p-2 bg-white/10 text-blue-300 rounded-xl border border-blue-400/20 shadow-inner">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-base font-bold text-white">Finalização de Pedido</h2>
-              <p className="text-xs text-emerald-100">
+              <p className="text-xs text-blue-100">
                 Passo {step} de 3 • Total: R$ {finalTotal.toFixed(2).replace('.', ',')}
               </p>
             </div>
@@ -330,7 +334,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
         {/* Step Progress Bar */}
         <div className="bg-slate-100 h-1.5 w-full flex">
-          <div className={`h-full transition-all duration-300 bg-[#10b981] ${
+          <div className={`h-full transition-all duration-300 bg-blue-600 ${
             step === 1 ? 'w-1/3' : step === 2 ? 'w-2/3' : 'w-full'
           }`} />
         </div>
@@ -341,7 +345,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
           {/* Operating Hours Alert Interceptor */}
           {checkScheduledOrder() && !hoursAccepted ? (
             <div className="py-8 text-center space-y-6 animate-in fade-in duration-300">
-              <div className="w-16 h-16 bg-amber-50 border border-amber-250 rounded-3xl flex items-center justify-center mx-auto text-amber-600 shadow-inner">
+              <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-3xl flex items-center justify-center mx-auto text-amber-600 shadow-inner">
                 <Clock className="w-8 h-8 text-amber-800" />
               </div>
               <div className="space-y-2.5 max-w-md mx-auto">
@@ -364,7 +368,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 <button
                   type="button"
                   onClick={() => setHoursAccepted(true)}
-                  className="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all"
                 >
                   Aceitar Agendamento
                 </button>
@@ -372,18 +376,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
             </div>
           ) : !isAuthenticated ? (
             <div className="py-8 text-center space-y-5">
-              <div className="w-16 h-16 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-center justify-center mx-auto text-emerald-600 shadow-inner">
+              <div className="w-16 h-16 bg-blue-50 border border-blue-200 rounded-3xl flex items-center justify-center mx-auto text-blue-700 shadow-inner">
                 <ShieldCheck className="w-8 h-8" />
               </div>
               <div className="space-y-2 max-w-md mx-auto">
-                <h3 className="text-lg font-bold text-slate-800">Login Obrigatório para Compras</h3>
+                <h3 className="text-lg font-bold text-slate-900">Login Obrigatório para Compras</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   Para sua segurança, rastreabilidade dos medicamentos e acúmulo de pontos fidelidade, você precisa estar conectado à sua conta.
                 </p>
               </div>
 
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl max-w-md mx-auto text-left space-y-2 text-xs">
-                <p className="text-emerald-600 font-bold flex items-center gap-1.5">
+                <p className="text-blue-700 font-bold flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4" /> Vantagens de ser Membro Super Popular:
                 </p>
                 <ul className="space-y-1 text-[11px] text-slate-600">
@@ -397,7 +401,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 <button
                   type="button"
                   onClick={() => openAuthModal('login', 'Faça login para continuar com a finalização do seu pedido.')}
-                  className="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-100/30 transition-all text-center"
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-950/20 transition-all text-center"
                 >
                   Fazer Login
                 </button>
@@ -425,14 +429,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                     onClick={() => setDeliveryType('delivery')}
                     className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
                       deliveryType === 'delivery'
-                        ? 'border-[#10b981] bg-emerald-50 text-emerald-900'
+                        ? 'border-blue-600 bg-blue-50/80 text-blue-950'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
                     }`}
                   >
-                    <Truck className="w-5 h-5 text-[#10b981] shrink-0 mt-0.5" />
+                    <Truck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                     <div>
-                      <span className={`font-bold text-xs block ${deliveryType === 'delivery' ? 'text-emerald-900' : 'text-slate-800'}`}>Entrega Delivery</span>
-                      <span className={`text-[11px] ${deliveryType === 'delivery' ? 'text-emerald-700' : 'text-slate-500'}`}>Motoboy em Itapema</span>
+                      <span className={`font-bold text-xs block ${deliveryType === 'delivery' ? 'text-blue-950' : 'text-slate-800'}`}>Entrega Delivery</span>
+                      <span className={`text-[11px] ${deliveryType === 'delivery' ? 'text-blue-700' : 'text-slate-500'}`}>Motoboy em Itapema</span>
                     </div>
                   </button>
 
@@ -441,14 +445,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                     onClick={() => setDeliveryType('pickup')}
                     className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
                       deliveryType === 'pickup'
-                        ? 'border-[#10b981] bg-emerald-50 text-emerald-900'
+                        ? 'border-blue-600 bg-blue-50/80 text-blue-950'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
                     }`}
                   >
-                    <Store className="w-5 h-5 text-[#10b981] shrink-0 mt-0.5" />
+                    <Store className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                     <div>
-                      <span className={`font-bold text-xs block ${deliveryType === 'pickup' ? 'text-emerald-900' : 'text-slate-800'}`}>Retirar no Balcão</span>
-                      <span className={`text-[11px] ${deliveryType === 'pickup' ? 'text-emerald-700' : 'text-slate-500'}`}>Loja Centro (Sem taxa)</span>
+                      <span className={`font-bold text-xs block ${deliveryType === 'pickup' ? 'text-blue-950' : 'text-slate-800'}`}>Retirar no Balcão</span>
+                      <span className={`text-[11px] ${deliveryType === 'pickup' ? 'text-blue-700' : 'text-slate-500'}`}>Loja Centro (Sem taxa)</span>
                     </div>
                   </button>
                 </div>
@@ -472,11 +476,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                             onClick={() => handleSelectSavedAddress(addr)}
                             className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
                               selectedAddressId === addr.id
-                                ? 'border-[#10b981] bg-emerald-50 text-emerald-950 font-semibold'
+                                ? 'border-blue-600 bg-blue-50 text-blue-950 font-semibold'
                                 : 'border-slate-200 bg-slate-50 text-slate-600'
                             }`}
                           >
-                            <p className={`font-bold truncate ${selectedAddressId === addr.id ? 'text-emerald-950' : 'text-slate-800'}`}>{addr.street}, {addr.number}</p>
+                            <p className={`font-bold truncate ${selectedAddressId === addr.id ? 'text-blue-950' : 'text-slate-800'}`}>{addr.street}, {addr.number}</p>
                             <p className="text-[11px] text-slate-500">{addr.neighborhood} - {addr.city}</p>
                           </button>
                         ))}
@@ -498,7 +502,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                           value={street}
                           onChange={(e) => setStreet(e.target.value)}
                           placeholder="Ex: Av. Nereu Ramos"
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                         />
                       </div>
                       <div>
@@ -509,18 +513,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                           value={number}
                           onChange={(e) => setNumber(e.target.value)}
                           placeholder="123"
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
                         <label className="text-[11px] font-semibold text-slate-500 block mb-1">Bairro *</label>
                         <select
                           value={neighborhood}
                           onChange={(e) => setNeighborhood(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-[#10b981] focus:outline-none capitalize"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none capitalize"
                         >
                           {(neighborhoods || []).map(n => (
                             <option key={n.bairro} value={n.bairro} className="bg-white text-slate-800">
@@ -530,23 +534,38 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         </select>
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-500 block mb-1">Complemento</label>
+                        <label className="text-[11px] font-semibold text-slate-500 block mb-1">
+                          Nº Apartamento / Bloco <span className="text-slate-400 font-normal">(Opcional)</span>
+                        </label>
                         <input
                           type="text"
-                          value={complement}
-                          onChange={(e) => setComplement(e.target.value)}
-                          placeholder="Apto, Bloco, etc."
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none"
+                          value={apartmentNumber}
+                          onChange={(e) => setApartmentNumber(e.target.value)}
+                          placeholder="Ex: Apto 302, Bloco B"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-500 block mb-1">
+                        Ponto de Referência / Complemento <span className="text-slate-400 font-normal">(Opcional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={complement}
+                        onChange={(e) => setComplement(e.target.value)}
+                        placeholder="Ex: Próximo ao supermercado, interfone nº 302"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                      />
                     </div>
                   </div>
 
                   {/* Geolocation & Delivery Time Estimation Card */}
-                  <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100 rounded-2xl space-y-3 shadow-lg">
+                  <div className="p-4 bg-gradient-to-br from-blue-50/70 via-slate-50 to-blue-50/40 border border-blue-200/60 rounded-2xl space-y-3 shadow-sm">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-600">
+                        <div className="p-2 bg-blue-600/10 border border-blue-600/25 rounded-xl text-blue-700">
                           <Clock className="w-5 h-5" />
                         </div>
                         <div>
@@ -555,8 +574,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                               Estimativa de Entrega
                             </h4>
                             {gpsActive && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-700 border border-emerald-500/30">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-450 animate-pulse"></span>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
                                 GPS Ativo
                               </span>
                             )}
@@ -569,19 +588,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
                       {/* Live Estimated Minutes Badge */}
                       <div className="text-right shrink-0">
-                        <div className="inline-block px-3 py-1 bg-emerald-600 border border-emerald-500 rounded-xl text-white font-extrabold text-sm shadow-inner">
+                        <div className="inline-block px-3 py-1 bg-blue-600 border border-blue-500 rounded-xl text-white font-extrabold text-sm shadow-inner">
                           ⚡ {deliveryEstimate.formattedTime}
                         </div>
-                        <p className="text-[10px] text-emerald-700 mt-0.5 font-medium">
+                        <p className="text-[10px] text-blue-800 mt-0.5 font-medium">
                           ~{deliveryEstimate.distanceKm.toFixed(1)} km da farmácia
                         </p>
                       </div>
                     </div>
 
                     {/* Geolocation Trigger Button & Info */}
-                    <div className="pt-2 border-t border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                    <div className="pt-2 border-t border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
                       <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                         <span>Base: <strong>Av. Nereu Ramos, 897 (Centro)</strong></span>
                       </div>
 
@@ -591,23 +610,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         disabled={isLocatingGps}
                         className={`w-full sm:w-auto px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
                           gpsActive
-                            ? 'bg-emerald-800 hover:bg-emerald-900 text-white border border-emerald-600'
-                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            ? 'bg-blue-800 hover:bg-blue-900 text-white border border-blue-700'
+                            : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
                         }`}
                       >
                         {isLocatingGps ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
                             <span>Calculando GPS...</span>
                           </>
                         ) : gpsActive ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <Check className="w-3.5 h-3.5 text-white" />
                             <span>Recalcular com GPS</span>
                           </>
                         ) : (
                           <>
-                            <LocateFixed className="w-3.5 h-3.5 text-emerald-600" />
+                            <LocateFixed className="w-3.5 h-3.5 text-blue-600" />
                             <span>Calcular via Meu GPS</span>
                           </>
                         )}
@@ -618,13 +637,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                     {geoFeedback && (
                       <div className={`p-2 rounded-xl text-[11px] font-medium flex items-center gap-1.5 ${
                         geoFeedback.type === 'success'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          ? 'bg-blue-50 text-blue-800 border border-blue-200'
                           : geoFeedback.type === 'error'
                           ? 'bg-amber-50 text-amber-800 border border-amber-200'
                           : 'bg-slate-100 text-slate-500'
                       }`}>
                         {geoFeedback.type === 'success' ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                         ) : (
                           <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         )}
@@ -641,9 +660,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
 
               {/* Pickup Estimation Card */}
               {deliveryType === 'pickup' && (
-                <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-md">
+                <div className="p-4 bg-gradient-to-br from-blue-50/70 via-slate-50 to-blue-50/40 border border-blue-200/60 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-sm">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 rounded-xl">
+                    <div className="p-2 bg-blue-600/10 border border-blue-600/25 text-blue-700 rounded-xl">
                       <Store className="w-5 h-5" />
                     </div>
                     <div>
@@ -652,7 +671,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="px-3 py-1 bg-emerald-600 text-white border border-emerald-500 rounded-xl font-bold text-xs">
+                    <span className="px-3 py-1 bg-blue-600 text-white border border-blue-500 rounded-xl font-bold text-xs">
                       ⚡ 15 a 20 min
                     </span>
                   </div>
@@ -663,7 +682,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="w-full py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-950/20 transition-all flex items-center justify-center gap-2"
                 >
                   <span>Continuar para Identificação</span>
                   <ArrowRight className="w-4 h-4" />
@@ -681,15 +700,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 </label>
 
                 {!isAuthenticated && (
-                  <div className="p-3 mb-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between">
+                  <div className="p-3 mb-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="text-xs text-emerald-800 font-medium">Já possui conta de membro?</span>
+                      <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span className="text-xs text-blue-800 font-medium">Já possui conta de membro?</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => openAuthModal('login')}
-                      className="px-2.5 py-1 bg-[#10b981] text-white text-xs font-bold rounded-lg shadow-sm"
+                      className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm"
                     >
                       Fazer Login
                     </button>
@@ -705,7 +724,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="Ex: Carlos Silveira"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none focus:bg-white"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none focus:bg-white"
                     />
                   </div>
 
@@ -718,7 +737,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
                         placeholder="(47) 99999-9999"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none focus:bg-white"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none focus:bg-white"
                       />
                     </div>
                     <div>
@@ -728,7 +747,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         value={customerCpf}
                         onChange={(e) => setCustomerCpf(e.target.value)}
                         placeholder="000.000.000-00"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none focus:bg-white"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none focus:bg-white"
                       />
                     </div>
                   </div>
@@ -742,7 +761,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                       value={orderNotes}
                       onChange={(e) => setOrderNotes(e.target.value)}
                       placeholder="Ex: Deixar na portaria, troco para nota de R$ 50..."
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#10b981] focus:outline-none focus:bg-white"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none focus:bg-white"
                     ></textarea>
                   </div>
                 </div>
@@ -759,7 +778,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="w-2/3 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2"
+                  className="w-2/3 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-950/20 transition-all flex items-center justify-center gap-2"
                 >
                   <span>Forma de Pagamento</span>
                   <ArrowRight className="w-4 h-4" />
@@ -776,7 +795,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
               <div className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5 text-[#10b981]" /> Cupom de Desconto
+                    <Tag className="w-3.5 h-3.5 text-blue-600" /> Cupom de Desconto
                   </span>
                   {appliedCoupon && (
                     <button
@@ -796,25 +815,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       placeholder="Digite POPULAR10 ou FRETEGRATIS"
-                      className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs uppercase font-mono text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-[#10b981] focus:outline-none"
+                      className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs uppercase font-mono text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-blue-600 focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={handleApplyCoupon}
-                      className="px-4 py-2 bg-[#10b981] text-white text-xs font-bold rounded-xl shadow-sm hover:bg-[#059669]"
+                      className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-blue-700"
                     >
                       Aplicar
                     </button>
                   </div>
                 ) : (
-                  <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-semibold flex items-center justify-between">
+                  <div className="p-2 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 font-semibold flex items-center justify-between">
                     <span>✓ Cupom {appliedCoupon.codigo} aplicado</span>
-                    <span className="text-emerald-600 font-bold">- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-blue-700 font-bold">- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
 
                 {couponFeedback && !appliedCoupon && (
-                  <p className={`text-[11px] font-medium ${couponFeedback.success ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <p className={`text-[11px] font-medium ${couponFeedback.success ? 'text-blue-700' : 'text-red-600'}`}>
                     {couponFeedback.text}
                   </p>
                 )}
@@ -884,7 +903,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   {/* Dinheiro */}
                   <label className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${
                     paymentMethod === 'dinheiro'
-                      ? 'border-[#10b981] bg-emerald-50 shadow-sm text-emerald-950'
+                      ? 'border-blue-600 bg-blue-50 shadow-sm text-blue-950'
                       : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-slate-600'
                   }`}>
                     <div className="flex items-center gap-3">
@@ -893,13 +912,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         name="payment"
                         checked={paymentMethod === 'dinheiro'}
                         onChange={() => setPaymentMethod('dinheiro')}
-                        className="text-[#10b981] focus:ring-[#10b981]"
+                        className="text-blue-600 focus:ring-blue-600"
                       />
                       <div className="flex items-center gap-2">
-                        <Banknote className="w-5 h-5 text-[#10b981]" />
+                        <Banknote className="w-5 h-5 text-blue-600" />
                         <div>
-                          <span className={`text-xs font-bold ${paymentMethod === 'dinheiro' ? 'text-emerald-950' : 'text-slate-800'}`}>Dinheiro na Entrega / Balcão</span>
-                          <p className={`text-[11px] ${paymentMethod === 'dinheiro' ? 'text-emerald-800' : 'text-slate-400'}`}>Pague em espécie ao receber os produtos</p>
+                          <span className={`text-xs font-bold ${paymentMethod === 'dinheiro' ? 'text-blue-950' : 'text-slate-800'}`}>Dinheiro na Entrega / Balcão</span>
+                          <p className={`text-[11px] ${paymentMethod === 'dinheiro' ? 'text-blue-800' : 'text-slate-400'}`}>Pague em espécie ao receber os produtos</p>
                         </div>
                       </div>
                     </div>
@@ -913,7 +932,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                           type="checkbox"
                           checked={needsChange}
                           onChange={(e) => setNeedsChange(e.target.checked)}
-                          className="rounded text-[#10b981]"
+                          className="rounded text-blue-600 focus:ring-blue-600"
                         />
                         Precisa de troco?
                       </label>
@@ -923,7 +942,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                           value={changeAmount}
                           onChange={(e) => setChangeAmount(e.target.value)}
                           placeholder="Troco para quanto? (Ex: R$ 50,00)"
-                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-[#10b981]"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-blue-600"
                         />
                       )}
                     </div>
@@ -932,7 +951,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   {/* Cartao Maquininha */}
                   <label className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${
                     paymentMethod === 'cartao_entrega'
-                      ? 'border-[#10b981] bg-emerald-50 shadow-sm text-emerald-950'
+                      ? 'border-blue-600 bg-blue-50 shadow-sm text-blue-950'
                       : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-slate-600'
                   }`}>
                     <div className="flex items-center gap-3">
@@ -941,13 +960,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                         name="payment"
                         checked={paymentMethod === 'cartao_entrega'}
                         onChange={() => setPaymentMethod('cartao_entrega')}
-                        className="text-[#10b981] focus:ring-[#10b981]"
+                        className="text-blue-600 focus:ring-blue-600"
                       />
                       <div className="flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-slate-400" />
+                        <CreditCard className="w-5 h-5 text-blue-600" />
                         <div>
-                          <span className={`text-xs font-bold ${paymentMethod === 'cartao_entrega' ? 'text-emerald-950' : 'text-slate-800'}`}>Maquininha de Cartão na Entrega</span>
-                          <p className={`text-[11px] ${paymentMethod === 'cartao_entrega' ? 'text-emerald-800' : 'text-slate-400'}`}>Crédito, Débito ou Vale-Alimentação/Refeição</p>
+                          <span className={`text-xs font-bold ${paymentMethod === 'cartao_entrega' ? 'text-blue-950' : 'text-slate-800'}`}>Maquininha de Cartão na Entrega</span>
+                          <p className={`text-[11px] ${paymentMethod === 'cartao_entrega' ? 'text-blue-800' : 'text-slate-400'}`}>Crédito, Débito ou Vale-Alimentação/Refeição</p>
                         </div>
                       </div>
                     </div>
@@ -980,28 +999,28 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   <span className="text-slate-800 font-semibold">{deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2).replace('.', ',')}` : 'Grátis'}</span>
                 </div>
                 {couponDiscount > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-semibold">
+                  <div className="flex justify-between text-blue-700 font-semibold">
                     <span>Desconto do Cupom</span>
                     <span>- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
 
                 {/* Live Delivery Time Estimate Indicator */}
-                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="text-emerald-800 font-medium">
+                    <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="text-blue-900 font-medium">
                       {deliveryType === 'delivery' ? 'Previsão de Entrega (Motoboy)' : 'Retirada no Balcão'}
                     </span>
                   </div>
-                  <span className="font-extrabold text-emerald-700">
+                  <span className="font-extrabold text-blue-800">
                     {deliveryType === 'delivery' ? deliveryEstimate.formattedTime : '15 a 20 min'}
                   </span>
                 </div>
 
                 <div className="pt-2 border-t border-slate-200 flex justify-between font-extrabold text-sm text-slate-800">
                   <span>Total Final</span>
-                  <span className="text-[#10b981] text-base">R$ {finalTotal.toFixed(2).replace('.', ',')}</span>
+                  <span className="text-blue-700 text-base">R$ {finalTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
 
@@ -1018,7 +1037,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onOrderCreated }) 
                   type="button"
                   disabled={loading}
                   onClick={handleFinalizeOrder}
-                  className="w-2/3 py-3.5 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-2/3 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-950/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <span>Processando Pedido...</span>

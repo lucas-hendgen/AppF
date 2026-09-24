@@ -120,7 +120,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
       bgColor: 'bg-white',
       textColor: 'text-slate-800',
       borderColor: 'border-slate-200',
-      buttonColor: 'bg-[#10b981] hover:bg-[#059669] text-white',
+      buttonColor: 'bg-blue-600 hover:bg-blue-700 text-white',
       productIds: selectedProductIds
     };
 
@@ -179,7 +179,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-purple-750 hover:bg-purple-850 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-950/20 flex items-center gap-1.5 transition-all"
             >
               <Plus className="w-4 h-4" />
               Adicionar Banner
@@ -193,7 +193,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
         <form onSubmit={handleSaveBanner} className="p-5 bg-slate-50 border border-slate-200 rounded-3xl space-y-4 animate-in slide-in-from-top-4 duration-200">
           <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-purple-650" />
+              <Sparkles className="w-4 h-4 text-blue-600" />
               {editingId ? 'Editar Banner' : 'Novo Banner Promocional'}
             </h4>
             <button
@@ -217,11 +217,11 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
                       value={imageUrl.startsWith('data:') ? 'Imagem anexada' : imageUrl}
                       onChange={e => setImageUrl(e.target.value)}
                       placeholder="Cole uma URL ou anexe um arquivo"
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-650"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
                       disabled={imageUrl.startsWith('data:')}
                     />
                   </div>
-                  <label className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-350 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0">
+                  <label className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0">
                     <Upload className="w-3.5 h-3.5" />
                     <span>Anexar</span>
                     <input
@@ -235,13 +235,13 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
                     <button
                       type="button"
                       onClick={() => setImageUrl('')}
-                      className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 rounded-xl text-xs font-bold shrink-0"
+                      className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-bold shrink-0"
                     >
                       Remover
                     </button>
                   )}
                 </div>
-                <p className="text-[10px] text-purple-700 font-bold mt-1.5 leading-relaxed bg-purple-50 p-2 rounded-xl border border-purple-100/50">
+                <p className="text-[10px] text-blue-700 font-bold mt-1.5 leading-relaxed bg-blue-50 p-2 rounded-xl border border-blue-100">
                   💡 <strong>Tamanho Recomendado:</strong> Crie a imagem com <strong>1200 x 300 pixels</strong> (proporção 4:1) e sem margens ou bordas brancas integradas nas laterais do arquivo para um encaixe perfeito e profissional.
                 </p>
               </div>
@@ -255,7 +255,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
                   value={buttonLink}
                   onChange={e => setButtonLink(e.target.value)}
                   placeholder="Ex: #catalog-section ou URL"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-650 font-medium"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 font-medium"
                 />
               </div>
             </div>
@@ -267,7 +267,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
               </label>
               <div className="bg-white border border-slate-200/80 rounded-xl p-3 max-h-36 overflow-y-auto space-y-1.5 text-xs">
                 {products.length === 0 ? (
-                  <p className="text-slate-450 italic">Carregando produtos...</p>
+                  <p className="text-slate-400 italic">Carregando produtos...</p>
                 ) : (
                   products.map(p => (
                     <label key={p.id} className="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-slate-900 font-medium">
@@ -281,7 +281,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
                             setSelectedProductIds(prev => prev.filter(id => id !== p.id));
                           }
                         }}
-                        className="rounded text-purple-650 focus:ring-purple-650/20"
+                        className="rounded text-blue-600 focus:ring-blue-600/20"
                       />
                       <span className="font-bold text-slate-800">{p.nome}</span>
                       <span className="text-[10px] text-slate-400">({p.sku})</span>
@@ -302,7 +302,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#10b981] hover:bg-[#059669] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-950/20 transition-all flex items-center gap-1.5"
             >
               <Check className="w-4 h-4" />
               {editingId ? 'Salvar Alterações' : 'Criar Banner'}
@@ -314,7 +314,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
       {/* Loading state */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-650 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
           <p className="text-xs text-slate-400 font-semibold">Carregando banners...</p>
         </div>
       ) : error ? (
@@ -324,7 +324,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
       ) : banners.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-3xl">
           <Image className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm font-bold text-slate-550">Nenhum banner cadastrado</p>
+          <p className="text-sm font-bold text-slate-500">Nenhum banner cadastrado</p>
           <p className="text-xs text-slate-400 mt-0.5">Cadastre uma campanha para exibir aos clientes na página inicial.</p>
         </div>
       ) : (
@@ -337,7 +337,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
             >
               <div className="flex items-center gap-3.5 min-w-0 flex-1">
                 {banner.imageUrl ? (
-                  <div className="w-20 h-10 rounded-lg border border-slate-150 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-20 h-10 rounded-lg border border-slate-100 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
                     <img src={banner.imageUrl} className="w-full h-full object-contain" alt="Preview" />
                   </div>
                 ) : (
@@ -351,7 +351,7 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
                   </span>
                   <p className="text-xs font-bold text-slate-800 mt-1 truncate">Link: {banner.buttonLink}</p>
                   {banner.productIds && banner.productIds.length > 0 && (
-                    <p className="text-[10px] text-purple-750 font-semibold mt-0.5">
+                    <p className="text-[10px] text-blue-700 font-semibold mt-0.5">
                       🏷️ {banner.productIds.length} produto(s) vinculado(s)
                     </p>
                   )}
@@ -362,14 +362,14 @@ export const AdminBanners: React.FC<AdminBannersProps> = ({ setGlobalLoading }) 
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => handleStartEdit(banner)}
-                  className="p-2 bg-slate-50 hover:bg-purple-50 text-slate-550 hover:text-[#10b981] border border-slate-200/60 rounded-xl transition-all"
+                  className="p-2 bg-slate-50 hover:bg-blue-50 text-slate-500 hover:text-blue-700 border border-slate-200/60 rounded-xl transition-all"
                   title="Editar Banner"
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleDeleteBanner(banner.id)}
-                  className="p-2 bg-slate-50 hover:bg-red-50 text-slate-550 hover:text-red-650 border border-slate-200/60 rounded-xl transition-all"
+                  className="p-2 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200/60 rounded-xl transition-all"
                   title="Remover Banner"
                 >
                   <Trash2 className="w-4 h-4" />

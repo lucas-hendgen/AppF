@@ -44,12 +44,12 @@ export const AdminMembers: React.FC = () => {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por nome, e-mail ou CPF..."
-          className="flex-1 min-w-[200px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-800 placeholder-slate-450 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10b981] transition-all font-medium"
+          className="flex-1 min-w-[200px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-medium"
         />
         <button
           onClick={() => load(false)}
           disabled={refreshing || loading}
-          className="p-2 rounded-xl bg-slate-55 hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-800 transition-colors"
+          className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-800 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
@@ -60,30 +60,30 @@ export const AdminMembers: React.FC = () => {
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-slate-50 border border-slate-150 rounded-xl p-4 animate-pulse h-20" />
+            <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-4 animate-pulse h-20" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-550 text-sm font-semibold bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+        <div className="text-center py-16 text-slate-500 text-sm font-semibold bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
           Nenhum membro encontrado.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
           {filtered.map(m => (
-            <div key={m.id} className="bg-white border border-slate-200/80 hover:border-purple-300 rounded-2xl p-4 flex flex-col justify-between shadow-sm hover:shadow transition-all space-y-3">
+            <div key={m.id} className="bg-white border border-slate-200 hover:border-blue-300 rounded-2xl p-4 flex flex-col justify-between shadow-sm hover:shadow transition-all space-y-3">
               <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 font-black text-lg flex items-center justify-center shrink-0 shadow-inner">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 font-black text-lg flex items-center justify-center shrink-0 shadow-inner">
                   {m.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-slate-800 text-sm truncate">{m.name}</span>
                     {m.role === 'admin' && (
-                      <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.2 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                      <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                         <ShieldCheck className="w-2.5 h-2.5" /> Admin
                       </span>
                     )}
-                    <span className={`text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.2 rounded-full border ${TIER_COLOR[m.membershipTier] ?? TIER_COLOR['Standard']}`}>
+                    <span className={`text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full border ${TIER_COLOR[m.membershipTier] ?? TIER_COLOR['Standard']}`}>
                       {m.membershipTier}
                     </span>
                   </div>
@@ -102,10 +102,10 @@ export const AdminMembers: React.FC = () => {
                 <p className="text-[10px] text-slate-400 font-semibold">
                   Membro desde {new Date(m.createdAt).toLocaleDateString('pt-BR')}
                 </p>
-                <div className="flex items-center gap-1 bg-[#10b981]/5 px-2.5 py-1 rounded-xl border border-[#10b981]/15 shrink-0">
-                  <Award className="w-4 h-4 text-[#10b981]" />
-                  <span className="text-xs font-black text-[#10b981]">{m.loyaltyPoints ?? 0}</span>
-                  <span className="text-[10px] text-[#10b981] font-bold">pts</span>
+                <div className="flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-200 shrink-0">
+                  <Award className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-black text-blue-700">{m.loyaltyPoints ?? 0}</span>
+                  <span className="text-[10px] text-blue-600 font-bold">pts</span>
                 </div>
               </div>
             </div>

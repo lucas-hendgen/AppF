@@ -65,8 +65,8 @@ export const AdminDashboard: React.FC = () => {
   if (error || !stats) {
     return (
       <div className="text-center py-10">
-        <p className="text-red-650 text-sm font-semibold mb-3">{error || 'Erro ao carregar dados.'}</p>
-        <button onClick={() => load(true)} className="px-4 py-2 bg-purple-650 text-white rounded-xl text-xs font-bold shadow">Tentar Novamente</button>
+        <p className="text-red-600 text-sm font-semibold mb-3">{error || 'Erro ao carregar dados.'}</p>
+        <button onClick={() => load(true)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow">Tentar Novamente</button>
       </div>
     );
   }
@@ -78,8 +78,8 @@ export const AdminDashboard: React.FC = () => {
       label: 'Faturamento Líquido (Pago)',
       value: formatBRL(stats.totalRevenue),
       icon: DollarSign,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50/40 border-emerald-100'
+      color: 'text-blue-700',
+      bg: 'bg-blue-50/40 border-blue-100'
     },
     {
       label: 'Fila de Pedidos Ativos',
@@ -92,8 +92,8 @@ export const AdminDashboard: React.FC = () => {
       label: 'Membros Fidelidade',
       value: stats.totalMembers,
       icon: Users,
-      color: 'text-purple-600',
-      bg: 'bg-purple-50/40 border-purple-100'
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50/40 border-indigo-100'
     }
   ];
 
@@ -102,22 +102,22 @@ export const AdminDashboard: React.FC = () => {
       label: 'Faturamento PIX (Online)',
       value: formatBRL(stats.pixRevenue),
       icon: QrCode,
-      color: 'text-sky-650',
+      color: 'text-sky-600',
       bg: 'bg-sky-50/30 border-sky-100/70'
     },
     {
       label: 'Cartão de Crédito (MP)',
       value: formatBRL(stats.creditCardRevenue),
       icon: CreditCard,
-      color: 'text-indigo-650',
+      color: 'text-indigo-600',
       bg: 'bg-indigo-50/30 border-indigo-100/70'
     },
     {
       label: 'Cartão (Entrega / Débito)',
       value: formatBRL(stats.debitCardRevenue),
       icon: Wallet,
-      color: 'text-teal-650',
-      bg: 'bg-teal-50/30 border-teal-100/70'
+      color: 'text-blue-600',
+      bg: 'bg-blue-50/30 border-blue-100/70'
     },
     {
       label: 'Dinheiro (Físico)',
@@ -183,7 +183,7 @@ export const AdminDashboard: React.FC = () => {
       {/* 1. SEÇÃO PRINCIPAL COM REFRESH */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-450">Visão Geral</h4>
+          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Visão Geral</h4>
           <button
             onClick={() => load(false)}
             disabled={refreshing}
@@ -215,7 +215,7 @@ export const AdminDashboard: React.FC = () => {
       <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
         <div>
           <h4 className="text-sm font-extrabold text-slate-800">Faturamento Diário</h4>
-          <p className="text-[11px] text-slate-450 font-semibold">Gráfico financeiro dos últimos 7 dias de vendas pagas</p>
+          <p className="text-[11px] text-slate-400 font-semibold">Gráfico financeiro dos últimos 7 dias de vendas pagas</p>
         </div>
 
         <div className="w-full overflow-x-auto scrollbar-none">
@@ -223,8 +223,8 @@ export const AdminDashboard: React.FC = () => {
             <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full overflow-visible">
               <defs>
                 <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
 
@@ -237,27 +237,27 @@ export const AdminDashboard: React.FC = () => {
               {fillPath && <path d={fillPath} fill="url(#chartGrad)" />}
 
               {/* Chart Line */}
-              {linePath && <path d={linePath} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
+              {linePath && <path d={linePath} fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
 
               {/* Dots & Values */}
               {points.map((p, i) => (
                 <g key={i} className="group cursor-pointer">
                   {/* Point circle */}
-                  <circle cx={p.x} cy={p.y} r="5" fill="#ffffff" stroke="#10b981" strokeWidth="2.5" className="transition-all hover:r-7" />
-                  <circle cx={p.x} cy={p.y} r="10" fill="#10b981" fillOpacity="0" className="hover:fill-opacity-10 transition-all" />
+                  <circle cx={p.x} cy={p.y} r="5" fill="#ffffff" stroke="#2563eb" strokeWidth="2.5" className="transition-all hover:r-7" />
+                  <circle cx={p.x} cy={p.y} r="10" fill="#2563eb" fillOpacity="0" className="hover:fill-opacity-10 transition-all" />
 
                   {/* Value Label above dot */}
                   <text
                     x={p.x}
                     y={p.y - 10}
                     textAnchor="middle"
-                    className="text-[9px] font-black fill-[#047857] opacity-0 group-hover:opacity-100 transition-opacity bg-white"
+                    className="text-[9px] font-black fill-blue-700 opacity-0 group-hover:opacity-100 transition-opacity bg-white"
                   >
                     R$ {Math.round(p.value)}
                   </text>
                   {/* Static value for peaks */}
                   {p.value === maxVal && maxVal > 0 && (
-                    <text x={p.x} y={p.y - 10} textAnchor="middle" className="text-[9px] font-extrabold fill-emerald-850">
+                    <text x={p.x} y={p.y - 10} textAnchor="middle" className="text-[9px] font-extrabold fill-blue-900">
                       R$ {Math.round(p.value)}
                     </text>
                   )}
@@ -280,7 +280,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* 3. SEÇÃO FINANCEIRA DETALHADA */}
       <div className="space-y-2">
-        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-450">Faturamento por Meio de Pagamento</h4>
+        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Faturamento por Meio de Pagamento</h4>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {paymentCards.map((card) => {
             const Icon = card.icon;
@@ -303,12 +303,12 @@ export const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Vendas Canceladas */}
         <div className="md:col-span-1 bg-red-50/20 border border-red-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-white shadow-sm border border-red-100 text-red-650 shrink-0">
+          <div className="p-3 rounded-xl bg-white shadow-sm border border-red-100 text-red-600 shrink-0">
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
             <p className="text-xl font-black text-red-700 leading-tight">{formatBRL(stats.cancelledRevenue)}</p>
-            <p className="text-xs text-red-650 font-bold mt-0.5">Vendas Canceladas ({stats.cancelledCount} ped.)</p>
+            <p className="text-xs text-red-600 font-bold mt-0.5">Vendas Canceladas ({stats.cancelledCount} ped.)</p>
           </div>
         </div>
 
@@ -322,7 +322,7 @@ export const AdminDashboard: React.FC = () => {
                 <div key={card.label} className="bg-white border border-slate-150 rounded-xl p-2.5 shadow-sm text-center">
                   <Icon className={`w-4 h-4 mx-auto mb-1 ${card.color}`} />
                   <span className="block font-extrabold text-slate-800 text-sm sm:text-base leading-none">{card.value}</span>
-                  <span className="text-[9px] text-slate-450 font-bold mt-1 block leading-tight">{card.label}</span>
+                  <span className="text-[9px] text-slate-400 font-bold mt-1 block leading-tight">{card.label}</span>
                 </div>
               );
             })}
@@ -334,7 +334,7 @@ export const AdminDashboard: React.FC = () => {
       <div className="bg-slate-50/30 border border-slate-200/50 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <div className="flex justify-between items-center bg-white border border-slate-150 rounded-xl p-3 shadow-sm animate-in">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#10b981]" />
+            <TrendingUp className="w-4 h-4 text-blue-600" />
             <span className="font-semibold text-slate-500">Ticket Médio por Compra</span>
           </div>
           <span className="font-extrabold text-slate-800 text-sm">
@@ -345,7 +345,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
         <div className="flex justify-between items-center bg-white border border-slate-150 rounded-xl p-3 shadow-sm animate-in">
           <div className="flex items-center gap-2">
-            <Truck className="w-4 h-4 text-[#10b981]" />
+            <Truck className="w-4 h-4 text-blue-600" />
             <span className="font-semibold text-slate-500">Taxa de Pedidos com Delivery</span>
           </div>
           <span className="font-extrabold text-slate-800 text-sm">

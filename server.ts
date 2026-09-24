@@ -1,11 +1,18 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
-import jwt from 'jsonwebtoken';
 import { createServer as createViteServer } from 'vite';
 import { initDatabase, db, Order } from './server/db.js';
 import { authController, requireAuth, requireAdmin, AuthenticatedRequest } from './server/auth.js';
 import { mercadoPagoController } from './server/mercadopago.js';
+import {
+  loginRateLimiter,
+  registerRateLimiter,
+  forgotPasswordRateLimiter,
+  resetPasswordRateLimiter,
+  googleAuthRateLimiter
+} from './server/rateLimiter.js';
 
 function checkScheduledOrder(): boolean {
   const now = new Date();
@@ -31,15 +38,19 @@ async function startServer() {
   app.use(express.json({ limit: '5mb' }));
   app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-  // Inicializa banco de dados seguro
-  initDatabase();
+  // Inicializa banco de dados MySQL
+  try {
+    await initDatabase();
+  } catch (err) {
+    console.error('Falha crítica ao inicializar banco de dados MySQL:', err);
+  }
 
-  // === ROTAS DE AUTENTICAÇÃO E PERFIL DE MEMBROS ===
-  app.post('/api/auth/register', authController.register);
-  app.post('/api/auth/login', authController.login);
-  app.post('/api/auth/forgot-password', authController.forgotPassword);
-  app.post('/api/auth/reset-password', authController.resetPassword);
-  app.post('/api/auth/google', authController.googleAuth);
+  // === ROTAS DE AUTENTICAÇÃO E PERFIL DE MEMBROS (Com Rate Limiting Ativo) ===
+  app.post('/api/auth/register', registerRateLimiter, authController.register);
+  app.post('/api/auth/login', loginRateLimiter, authController.login);
+  app.post('/api/auth/forgot-password', forgotPasswordRateLimiter, authController.forgotPassword);
+  app.post('/api/auth/reset-password', resetPasswordRateLimiter, authController.resetPassword);
+  app.post('/api/auth/google', googleAuthRateLimiter, authController.googleAuth);
   app.get('/api/auth/me', requireAuth, authController.me);
   app.put('/api/auth/profile', requireAuth, authController.updateProfile);
   app.post('/api/auth/address', requireAuth, authController.addAddress);
@@ -54,21 +65,23 @@ async function startServer() {
   app.post('/api/payments/webhook', mercadoPagoController.handleWebhook);
 
   // === ROTAS DE PEDIDOS (ORDERS) ===
-  app.get('/api/orders', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.get('/api/orders', requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       if (req.user?.role === 'admin') {
-        res.json({ orders: db.getOrders() });
+        const orders = await db.getOrders();
+        res.json({ orders });
         return;
       }
-      res.json({ orders: db.getOrdersByUserId(req.user!.id) });
+      const orders = await db.getOrdersByUserId(req.user!.id);
+      res.json({ orders });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao listar pedidos.' });
     }
   });
 
-  app.get('/api/orders/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.get('/api/orders/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      const order = db.getOrderById(req.params.id);
+      const order = await db.getOrderById(req.params.id);
       if (!order) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
         return;
@@ -84,7 +97,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/orders', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.post('/api/orders', requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const orderData = req.body;
       if (!orderData.customerName || !orderData.items || !Array.isArray(orderData.items)) {
@@ -97,7 +110,7 @@ async function startServer() {
       const validatedItems = [];
 
       for (const item of orderData.items) {
-        const dbProd = db.getProductById(item.id);
+        const dbProd = await db.getProductById(item.id);
         if (!dbProd || dbProd.status !== 'Ativo') {
           res.status(400).json({ error: `Produto inválido ou indisponível: ${item.name || item.id}` });
           return;
@@ -118,7 +131,6 @@ async function startServer() {
             }
           }
           if (foundVarPrice === null) {
-            // Se variação não bateu, usa o preço da primeira disponível
             const firstPriceRaw = rawVars[0].split(':')[1];
             unitPrice = parseFloat(String(firstPriceRaw).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
           } else {
@@ -154,14 +166,16 @@ async function startServer() {
           ? ''
           : String(orderData.address.neighborhood || '').toLowerCase();
         
-        const dbNbh = db.getNeighborhoods().find(n => n.bairro.toLowerCase() === neighborhoodName);
+        const allNeighborhoods = await db.getNeighborhoods();
+        const dbNbh = allNeighborhoods.find(n => n.bairro.toLowerCase() === neighborhoodName);
         expectedDeliveryFee = dbNbh ? dbNbh.taxa : (Number(orderData.deliveryFee) || 5.0);
       }
 
       // Validar Cupom de Desconto
       let expectedDiscount = 0;
       if (orderData.couponCode) {
-        const dbCoupon = db.getCoupons().find(c => c.codigo.toUpperCase() === String(orderData.couponCode).toUpperCase());
+        const allCoupons = await db.getCoupons();
+        const dbCoupon = allCoupons.find(c => c.codigo.toUpperCase() === String(orderData.couponCode).toUpperCase());
         if (dbCoupon) {
           const val = dbCoupon.valor_desconto;
           if (dbCoupon.tipo_desconto === 'produtos') {
@@ -204,20 +218,20 @@ async function startServer() {
       const orderId = orderData.id || `FSP-${Math.floor(1000 + Math.random() * 9000)}`;
       const newOrder: Order = {
         id: orderId,
-        userId: req.user!.id, // Força a associação segura com o usuário logado
+        userId: req.user!.id,
         customerName: orderData.customerName,
         customerPhone: orderData.customerPhone || '',
         deliveryType: orderData.deliveryType || 'delivery',
         address: orderData.address,
         tableNumber: orderData.tableNumber,
-        items: validatedItems, // Utiliza os itens validados e com preços garantidos do DB
+        items: validatedItems,
         subtotal: expectedSubtotal,
         deliveryFee: expectedDeliveryFee,
         discount: expectedDiscount,
         couponCode: orderData.couponCode ? String(orderData.couponCode).toUpperCase() : undefined,
         total: expectedTotal,
         paymentMethod: orderData.paymentMethod || 'pix',
-        paymentStatus: orderData.paymentStatus || (orderData.paymentMethod === 'dinheiro' || orderData.paymentMethod === 'cartao_entrega' ? 'pending' : 'pending'),
+        paymentStatus: orderData.paymentStatus || 'pending',
         status: 'recebido',
         changeAmount: orderData.changeAmount,
         notes: orderData.notes,
@@ -226,13 +240,13 @@ async function startServer() {
         updatedAt: new Date().toISOString()
       };
 
-      const saved = db.createOrder(newOrder);
+      const saved = await db.createOrder(newOrder);
 
       // Creditar pontos de fidelidade
-      const user = db.getUserById(req.user!.id);
+      const user = await db.getUserById(req.user!.id);
       if (user) {
         const earnedPoints = Math.floor(newOrder.total * 2); // 2 pontos por R$ 1,00
-        db.updateUser(user.id, {
+        await db.updateUser(user.id, {
           loyaltyPoints: (user.loyaltyPoints || 0) + earnedPoints
         });
       }
@@ -247,14 +261,14 @@ async function startServer() {
     }
   });
 
-  app.put('/api/orders/:id/status', requireAdmin, (req, res) => {
+  app.put('/api/orders/:id/status', requireAdmin, async (req, res) => {
     try {
       const { status, paymentStatus } = req.body;
       const updates: Partial<Order> = {};
       if (status) updates.status = status;
       if (paymentStatus) updates.paymentStatus = paymentStatus;
 
-      const updated = db.updateOrder(req.params.id, updates);
+      const updated = await db.updateOrder(req.params.id, updates);
       if (!updated) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
         return;
@@ -265,9 +279,9 @@ async function startServer() {
     }
   });
 
-  app.put('/api/orders/:id/unschedule', requireAdmin, (req, res) => {
+  app.put('/api/orders/:id/unschedule', requireAdmin, async (req, res) => {
     try {
-      const updated = db.updateOrder(req.params.id, { scheduled: false });
+      const updated = await db.updateOrder(req.params.id, { scheduled: false });
       if (!updated) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
         return;
@@ -278,9 +292,9 @@ async function startServer() {
     }
   });
 
-  app.put('/api/orders/:id/reject-schedule', requireAdmin, (req, res) => {
+  app.put('/api/orders/:id/reject-schedule', requireAdmin, async (req, res) => {
     try {
-      const updated = db.updateOrder(req.params.id, { scheduled: false, status: 'cancelado' });
+      const updated = await db.updateOrder(req.params.id, { scheduled: false, status: 'cancelado' });
       if (!updated) {
         res.status(404).json({ error: 'Pedido não encontrado.' });
         return;
@@ -292,9 +306,10 @@ async function startServer() {
   });
 
   // === PRODUTOS ===
-  app.get('/api/products', (req, res) => {
+  app.get('/api/products', async (req, res) => {
     try {
-      const products = db.getProducts().filter(p => p.status === 'Ativo');
+      const all = await db.getProducts();
+      const products = all.filter(p => p.status === 'Ativo');
       res.json({ products });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao listar produtos.' });
@@ -302,15 +317,16 @@ async function startServer() {
   });
 
   // === CUPONS E BAIRROS ===
-  app.get('/api/coupons', requireAdmin, (req, res) => {
+  app.get('/api/coupons', requireAdmin, async (req, res) => {
     try {
-      res.json({ coupons: db.getCoupons() });
+      const coupons = await db.getCoupons();
+      res.json({ coupons });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao listar cupons.' });
     }
   });
 
-  app.post('/api/coupons/validate', (req, res) => {
+  app.post('/api/coupons/validate', async (req, res) => {
     try {
       const { code } = req.body;
       if (!code) {
@@ -318,7 +334,8 @@ async function startServer() {
         return;
       }
       const cleanCode = code.trim().toUpperCase();
-      const found = db.getCoupons().find(c => c.codigo.toUpperCase() === cleanCode);
+      const allCoupons = await db.getCoupons();
+      const found = allCoupons.find(c => c.codigo.toUpperCase() === cleanCode);
       if (!found) {
         res.status(404).json({ error: 'Cupom não encontrado ou inválido.' });
         return;
@@ -329,40 +346,42 @@ async function startServer() {
     }
   });
 
-  app.get('/api/neighborhoods', (req, res) => {
+  app.get('/api/neighborhoods', async (req, res) => {
     try {
-      res.json({ neighborhoods: db.getNeighborhoods() });
+      const neighborhoods = await db.getNeighborhoods();
+      res.json({ neighborhoods });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao listar bairros.' });
     }
   });
 
-  app.get('/api/admin/products', requireAdmin, (req, res) => {
+  app.get('/api/admin/products', requireAdmin, async (req, res) => {
     try {
-      res.json({ products: db.getProducts() });
+      const products = await db.getProducts();
+      res.json({ products });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao listar produtos.' });
     }
   });
 
-  app.post('/api/admin/products', requireAdmin, (req, res) => {
+  app.post('/api/admin/products', requireAdmin, async (req, res) => {
     try {
       const data = req.body;
       if (!data.nome || !data.sku || !data.categoria) {
         res.status(400).json({ error: 'Nome, SKU e categoria são obrigatórios.' });
         return;
       }
-      const product = db.createProduct(data);
+      const product = await db.createProduct(data);
       res.status(201).json({ product });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao criar produto.' });
     }
   });
 
-  app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
+  app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updated = db.updateProduct(id, req.body);
+      const updated = await db.updateProduct(id, req.body);
       if (!updated) {
         res.status(404).json({ error: 'Produto não encontrado.' });
         return;
@@ -373,10 +392,10 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
+  app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const deleted = db.deleteProduct(id);
+      const deleted = await db.deleteProduct(id);
       if (!deleted) {
         res.status(404).json({ error: 'Produto não encontrado.' });
         return;
@@ -388,9 +407,10 @@ async function startServer() {
   });
 
   // === ADMIN USERS & STATS ===
-  app.get('/api/admin/users', requireAdmin, (req, res) => {
+  app.get('/api/admin/users', requireAdmin, async (req, res) => {
     try {
-      const users = db.getUsers().map(u => {
+      const allUsers = await db.getUsers();
+      const users = allUsers.map(u => {
         const { passwordHash, ...safe } = u;
         return safe;
       });
@@ -400,10 +420,10 @@ async function startServer() {
     }
   });
 
-  app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     try {
-      const orders = db.getOrders();
-      const users = db.getUsers();
+      const orders = await db.getOrders();
+      const users = await db.getUsers();
       
       const paidOrders = orders.filter(o => o.paymentStatus === 'paid');
       const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
@@ -468,18 +488,18 @@ async function startServer() {
     }
   });
 
-  app.post('/api/admin/coupons', requireAdmin, (req, res) => {
+  app.post('/api/admin/coupons', requireAdmin, async (req, res) => {
     try {
-      const coupon = db.createCoupon(req.body);
+      const coupon = await db.createCoupon(req.body);
       res.status(201).json({ coupon });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao criar cupom.' });
     }
   });
 
-  app.delete('/api/admin/coupons/:code', requireAdmin, (req, res) => {
+  app.delete('/api/admin/coupons/:code', requireAdmin, async (req, res) => {
     try {
-      const deleted = db.deleteCoupon(req.params.code);
+      const deleted = await db.deleteCoupon(req.params.code);
       if (!deleted) {
         res.status(404).json({ error: 'Cupom não encontrado.' });
         return;
@@ -490,9 +510,9 @@ async function startServer() {
     }
   });
 
-  app.put('/api/admin/neighborhoods/:bairro', requireAdmin, (req, res) => {
+  app.put('/api/admin/neighborhoods/:bairro', requireAdmin, async (req, res) => {
     try {
-      const updated = db.updateNeighborhood(req.params.bairro, req.body.taxa);
+      const updated = await db.updateNeighborhood(req.params.bairro, req.body.taxa);
       if (!updated) {
         res.status(404).json({ error: 'Bairro não encontrado.' });
         return;
@@ -504,26 +524,27 @@ async function startServer() {
   });
 
   // === ROTAS DE BANNERS ===
-  app.get('/api/banners', (req, res) => {
+  app.get('/api/banners', async (req, res) => {
     try {
-      res.json({ banners: db.getBanners() });
+      const banners = await db.getBanners();
+      res.json({ banners });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao listar banners.' });
     }
   });
 
-  app.post('/api/admin/banners', requireAdmin, (req, res) => {
+  app.post('/api/admin/banners', requireAdmin, async (req, res) => {
     try {
-      const banner = db.createBanner(req.body);
+      const banner = await db.createBanner(req.body);
       res.status(201).json({ banner });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao criar banner.' });
     }
   });
 
-  app.put('/api/admin/banners/:id', requireAdmin, (req, res) => {
+  app.put('/api/admin/banners/:id', requireAdmin, async (req, res) => {
     try {
-      const banner = db.updateBanner(req.params.id, req.body);
+      const banner = await db.updateBanner(req.params.id, req.body);
       if (!banner) {
         res.status(404).json({ error: 'Banner não encontrado.' });
         return;
@@ -534,9 +555,9 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/admin/banners/:id', requireAdmin, (req, res) => {
+  app.delete('/api/admin/banners/:id', requireAdmin, async (req, res) => {
     try {
-      const deleted = db.deleteBanner(req.params.id);
+      const deleted = await db.deleteBanner(req.params.id);
       if (!deleted) {
         res.status(404).json({ error: 'Banner não encontrado.' });
         return;
@@ -544,6 +565,53 @@ async function startServer() {
       res.json({ message: 'Banner removido com sucesso.' });
     } catch (err) {
       res.status(500).json({ error: 'Erro ao remover banner.' });
+    }
+  });
+
+  // === ROTAS DE CATEGORIAS DE PRODUTOS ===
+  app.get('/api/categories', async (req, res) => {
+    try {
+      const onlyActive = req.query.all !== 'true';
+      const categories = await db.getCategories(onlyActive);
+      res.json({ categories });
+    } catch (err) {
+      res.status(500).json({ error: 'Erro ao listar categorias.' });
+    }
+  });
+
+  app.post('/api/admin/categories', requireAdmin, async (req, res) => {
+    try {
+      const category = await db.createCategory(req.body);
+      res.status(201).json({ category });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Erro ao criar categoria.' });
+    }
+  });
+
+  app.put('/api/admin/categories/:id', requireAdmin, async (req, res) => {
+    try {
+      const category = await db.updateCategory(req.params.id, req.body);
+      if (!category) {
+        res.status(404).json({ error: 'Categoria não encontrada.' });
+        return;
+      }
+      res.json({ category });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Erro ao atualizar categoria.' });
+    }
+  });
+
+  app.delete('/api/admin/categories/:id', requireAdmin, async (req, res) => {
+    try {
+      const fallback = req.query.fallback ? String(req.query.fallback) : 'medicamentos';
+      const deleted = await db.deleteCategory(req.params.id, fallback);
+      if (!deleted) {
+        res.status(404).json({ error: 'Categoria não encontrada.' });
+        return;
+      }
+      res.json({ message: 'Categoria removida com sucesso.' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Erro ao remover categoria.' });
     }
   });
 

@@ -9,7 +9,9 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "tsx --test tests/**/*.test.ts",
+    "set-admin": "tsx scripts/set-admin.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -26,6 +28,7 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "mysql2": "^3.24.4",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-router-dom": "^7.18.3",

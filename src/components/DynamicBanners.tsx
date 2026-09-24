@@ -10,15 +10,15 @@ export const DynamicBanners: React.FC = () => {
   const fallbackBanners: Banner[] = [
     {
       id: "b1",
-      title: "Promoção de Verão - Farmácia Super Popular",
-      subtitle: "Energia e Proteção para sua Família!",
+      title: "Promoção Especial - Farmácia Super Popular",
+      subtitle: "Qualidade, Economia e Cuidado para toda sua Família!",
       buttonText: "Aproveite agora!",
       buttonLink: "#catalog-section",
       imageUrl: "/banner-principal.png",
-      bgColor: "bg-gradient-to-br from-emerald-50 to-teal-50/50",
-      textColor: "text-slate-800",
-      borderColor: "border-emerald-100/80",
-      buttonColor: "bg-[#10b981] hover:bg-[#059669] text-white"
+      bgColor: "bg-gradient-to-br from-[#0a192f] via-[#172554] to-[#1e3a8a]",
+      textColor: "text-white",
+      borderColor: "border-blue-900/60",
+      buttonColor: "bg-blue-600 hover:bg-blue-700 text-white shadow-md"
     }
   ];
 

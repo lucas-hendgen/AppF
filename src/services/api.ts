@@ -437,5 +437,38 @@ export const api = {
       method: 'DELETE',
       headers: { ...getAuthHeader() }
     });
+  },
+
+  // === CATEGORIAS ===
+  async fetchCategories(includeAll = false): Promise<import('../types').Category[]> {
+    const query = includeAll ? '?all=true' : '';
+    const result = await safeRequest<{ categories: import('../types').Category[] }>(`${API_BASE}/categories${query}`);
+    return result.categories || [];
+  },
+
+  async createCategory(data: Partial<import('../types').Category>): Promise<import('../types').Category> {
+    const result = await safeRequest<{ category: import('../types').Category }>(`${API_BASE}/admin/categories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(data)
+    });
+    return result.category;
+  },
+
+  async updateCategory(id: string, data: Partial<import('../types').Category>): Promise<import('../types').Category> {
+    const result = await safeRequest<{ category: import('../types').Category }>(`${API_BASE}/admin/categories/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(data)
+    });
+    return result.category;
+  },
+
+  async deleteCategory(id: string, fallback?: string): Promise<void> {
+    const query = fallback ? `?fallback=${encodeURIComponent(fallback)}` : '';
+    await safeRequest(`${API_BASE}/admin/categories/${id}${query}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
   }
 };
